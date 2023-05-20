@@ -25,15 +25,7 @@ extern "C" {
         STREAM_ERROR_OOB
     } UStreamError;
 
-    /* The LOD levels that drawables can define. */
-    typedef enum EDrawableLod {
-      LOD_HIGH = 0,
-      LOD_MED,
-      LOD_LOW,
-      LOD_VLOW,
-  
-      LOD_MAX
-    } EDrawableLod;
+
 
 #ifdef __cplusplus
 }

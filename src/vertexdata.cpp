@@ -272,7 +272,10 @@ UIndexBuffer::UIndexBuffer() : mVTable(0), mIndexCount(0), mIndexStride(0), m000
 }
 
 UIndexBuffer::~UIndexBuffer() {
-    delete[] mIndexData;
+    if (mIndexData != nullptr) {
+        delete[] mIndexData;
+        mIndexData = nullptr;
+    }
 }
 
 void UIndexBuffer::Deserialize(bStream::CStream* stream) {

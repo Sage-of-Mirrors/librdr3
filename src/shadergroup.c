@@ -1,5 +1,4 @@
 #include "shadergroup.h"
-#include "stream.h"
 
 void DeserializeShader(UStream* stream, UShader* dst) {
 
