@@ -3,6 +3,7 @@
 #include "types.h"
 #include "math.hpp"
 
+#include <array>
 #include <vector>
 
 namespace bStream {
@@ -81,14 +82,14 @@ enum class EVertexAttribute : uint8_t {
 };
 
 struct UVertex {
-    UVector3 mPosition[4];
-    UVector3 mNormal[4];
-    UVector3 mTangent[4];
-    UVector3 mBinormal[4];
-    UVector4 mColor[4];
-    UVector4 mBlendWeight[4];
-    UVector4 mBlendIndex[4];
-    UVector2 mTexCoord[24];
+    std::array<UVector3, 4> Position;
+    std::array<UVector3, 4> Normal;
+    std::array<UVector3, 4> Tangent;
+    std::array<UVector3, 4> Binormal;
+    std::array<UVector4, 4> Color;
+    std::array<UVector4, 4> BlendWeight;
+    std::array<UVector4, 4> BlendIndex;
+    std::array<UVector2, 24> TexCoord;
 };
 
 struct UVertexFormat {

@@ -134,8 +134,6 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
     mBoundPointer = stream->readUInt64();
     mSamplers = stream->readUInt64();
     mPadding3 = stream->readUInt64();
-
-    mLodData[0]->Debug_DumpObjFile();
 }
 
 void UDrawableData::Serialize(bStream::CStream* stream) {
@@ -145,7 +143,7 @@ void UDrawableData::Serialize(bStream::CStream* stream) {
 UDrawable* UDrawableData::GetDrawable() {
     UDrawable* drawable = new UDrawable();
 
-    drawable->FileName = mName;
+    drawable->FileName = mName.data();
 
     for (int i = 0; i < LOD_MAX; i++) {
         if (mLodData[i] == nullptr) {

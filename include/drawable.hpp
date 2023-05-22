@@ -3,6 +3,7 @@
 #include "math.hpp"
 #include "vertexdata.hpp"
 
+#include <array>
 #include <vector>
 #include <string>
 
@@ -49,7 +50,7 @@ struct ULod {
 
 struct UDrawable {
     std::string FileName;
-    ULod* Lods[4] = { nullptr, nullptr, nullptr, nullptr };
+    std::array<ULod*, 4> Lods = { nullptr, nullptr, nullptr, nullptr };
 
     UDrawable() : FileName("") { }
 
