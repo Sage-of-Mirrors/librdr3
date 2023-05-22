@@ -1,4 +1,5 @@
 #include "loddata.hpp"
+#include "drawable.hpp"
 #include "bstream.h"
 
 #include <string>
@@ -6,15 +7,15 @@
 
 /* UGeometry */
 
-UGeometry::UGeometry() {
+UGeometryData::UGeometryData() {
 
 }
 
-UGeometry::~UGeometry() {
+UGeometryData::~UGeometryData() {
 
 }
 
-void UGeometry::Deserialize(bStream::CStream* stream) {
+void UGeometryData::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
 
     uint64_t vertexBufferPtr = stream->readUInt64() & 0x0FFFFFFF;
@@ -33,25 +34,25 @@ void UGeometry::Deserialize(bStream::CStream* stream) {
     mIndexBuffer.Deserialize(stream);
 }
 
-void UGeometry::Serialize(bStream::CStream* stream) {
+void UGeometryData::Serialize(bStream::CStream* stream) {
 
 }
 
 /* UModel */
 
-UModel::UModel() {
+UModelData::UModelData() {
 
 }
 
-UModel::~UModel() {
-    for (UGeometry* geom : mGeometry) {
+UModelData::~UModelData() {
+    for (UGeometryData* geom : mGeometry) {
         delete geom;
     }
 
     mGeometry.clear();
 }
 
-void UModel::Deserialize(bStream::CStream* stream) {
+void UModelData::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
 
     uint64_t geometryPtr = stream->readUInt64() & 0x0FFFFFFF;
@@ -96,7 +97,7 @@ void UModel::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curGeometryPtr);
 
-        UGeometry* geom = new UGeometry();
+        UGeometryData* geom = new UGeometryData();
         geom->Deserialize(stream);
         mGeometry.push_back(geom);
 
@@ -104,11 +105,26 @@ void UModel::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UModel::Serialize(bStream::CStream* stream) {
+void UModelData::Serialize(bStream::CStream* stream) {
 
 }
 
-void UModel::Debug_DumpObjFile(bStream::CStream* stream) {
+UModel* UModelData::GetModel() {
+    UModel* model = new UModel();
+
+    for (UGeometryData* geomData : mGeometry) {
+        UGeometry* geom = new UGeometry();
+
+        geom->Vertices = geomData->GetVertexBuffer()->GetVertices();
+        geom->Indices = geomData->GetIndexBuffer()->GetIndices();
+
+        model->Geometries.push_back(geom);
+    }
+
+    return model;
+}
+
+void UModelData::Debug_DumpObjFile(bStream::CStream* stream) {
     uint64_t vertexCount = 1;
 
     for (int i = 0; i < mGeometry.size(); i++) {
@@ -141,7 +157,7 @@ ULodData::ULodData() {
 }
 
 ULodData::~ULodData() {
-    for (UModel* model : mModels) {
+    for (UModelData* model : mModels) {
         delete model;
     }
 
@@ -163,7 +179,7 @@ void ULodData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curModelPtr);
 
-        UModel* model = new UModel();
+        UModelData* model = new UModelData();
         model->Deserialize(stream);
         mModels.push_back(model);
 
@@ -173,6 +189,16 @@ void ULodData::Deserialize(bStream::CStream* stream) {
 
 void ULodData::Serialize(bStream::CStream* stream) {
 
+}
+
+ULod* ULodData::GetLod() {
+    ULod* lod = new ULod();
+
+    for (UModelData* modelData : mModels) {
+        lod->Models.push_back(modelData->GetModel());
+    }
+
+    return lod;
 }
 
 void ULodData::Debug_DumpObjFile() {

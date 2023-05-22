@@ -1,58 +1,64 @@
 #pragma once
 
-#include "types.h"
+#include "math.hpp"
+#include "vertexdata.hpp"
 
+#include <vector>
 #include <string>
 
-const uint32_t LOD_MAX = 4;
+struct UGeometry {
+    std::vector<UVertex> Vertices;
+    std::vector<uint32_t> Indices;
 
-class ULodData;
-namespace bStream {
-    class CStream;
-}
+    UGeometry() { }
 
-/* The LOD levels that drawables can define. */
-enum class EDrawableLod : uint8_t {
-    LOD_HIGH = 0,
-    LOD_MED,
-    LOD_LOW,
-    LOD_VLOW,
-
-    LOD_MAX
+    virtual ~UGeometry() {
+        Vertices.clear();
+        Indices.clear();
+    }
 };
 
-class UDrawable {
-    uint64_t mVTable;            // 0x00
+struct UModel {
+    std::vector<UGeometry*> Geometries;
 
-    class UBlockMap* mBlockMap;        // 0x08
-    class UShaderGroup* mShaderGroup;  // 0x10
-    uint64_t mSkeletonData;      // 0x18
+    UModel() { }
 
-    UVector4 mBoundingSphere; // 0x20, w is radius
-    UVector4 mBoundingBoxMin; // 0x30, w has no meaning
-    UVector4 mBoundingBoxMax; // 0x40, w has no meaning
+    virtual ~UModel() {
+        for (int i = 0; i < Geometries.size(); i++) {
+            delete Geometries[i];
+            Geometries[i] = nullptr;
+        }
+    }
+};
 
-    ULodData* mLodData[LOD_MAX];   // 0x50, 0x58, 0x60, 0x68
-    float mLodDistances[LOD_MAX];  // 0x70, 0x74, 0x78, 0x7C
-    uint32_t mLodFlags[LOD_MAX];   // 0x80, 0x84, 0x88, 0x8C
+struct ULod {
+    std::vector<UModel*> Models;
 
-    class UJointLimitData* mJointLimitData; // 0x90
-    uint64_t mPadding1;   // 0x98
+    float LodDistance;
+    uint32_t LodFlags;
 
-    uint16_t mExpressionCount;  // 0xA0
-    uint16_t mPadding2;         // 0xA2
-    uint32_t mExpressions;      // 0xA4
+    ULod() : LodDistance(0.0f), LodFlags(0) { }
 
-    std::string mName;         // 0xA8
-    uint64_t m00B0;         // 0xB0
-    uint64_t mBoundPointer; // 0xB8
-    uint64_t mSamplers;     // 0xC0
-    uint64_t mPadding3;     // 0xC8
+    virtual ~ULod() {
+        for (int i = 0; i < Models.size(); i++) {
+            delete Models[i];
+            Models[i] = nullptr;
+        }
+    }
+};
 
-public:
-    UDrawable();
-    virtual ~UDrawable();
+struct UDrawable {
+    std::string FileName;
+    ULod* Lods[4] = { nullptr, nullptr, nullptr, nullptr };
 
-    void Deserialize(bStream::CStream* stream);
-    void Serialize(bStream::CStream* stream);
+    UDrawable() : FileName("") { }
+
+    virtual ~UDrawable() {
+        for (int i = 0; i < 4; i++) {
+            if (Lods[i] != nullptr) {
+                delete Lods[i];
+                Lods[i] = nullptr;
+            }
+        }
+    }
 };

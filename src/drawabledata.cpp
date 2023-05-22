@@ -1,19 +1,20 @@
-#include "drawable.hpp"
+#include "drawabledata.hpp"
 #include "loddata.hpp"
 #include "bstream.h"
+#include "drawable.hpp"
 
 
 /* UDrawable */
 
-UDrawable::UDrawable() {
+UDrawableData::UDrawableData() {
 
 }
 
-UDrawable::~UDrawable() {
+UDrawableData::~UDrawableData() {
 
 }
 
-void UDrawable::Deserialize(bStream::CStream* stream) {
+void UDrawableData::Deserialize(bStream::CStream* stream) {
     if (stream == nullptr) {
         return;
     }
@@ -137,6 +138,24 @@ void UDrawable::Deserialize(bStream::CStream* stream) {
     mLodData[0]->Debug_DumpObjFile();
 }
 
-void UDrawable::Serialize(bStream::CStream* stream) {
+void UDrawableData::Serialize(bStream::CStream* stream) {
 
+}
+
+UDrawable* UDrawableData::GetDrawable() {
+    UDrawable* drawable = new UDrawable();
+
+    drawable->FileName = mName;
+
+    for (int i = 0; i < LOD_MAX; i++) {
+        if (mLodData[i] == nullptr) {
+            continue;
+        }
+
+        drawable->Lods[i] = mLodData[i]->GetLod();
+        drawable->Lods[i]->LodDistance = mLodDistances[i];
+        drawable->Lods[i]->LodFlags = mLodFlags[i];
+    }
+
+    return drawable;
 }

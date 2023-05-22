@@ -1,4 +1,7 @@
 #pragma once
 
-#include "types.h"
-#include "drawable.hpp"
+#include <string>
+
+struct UDrawable;
+
+UDrawable* ImportYdr(std::string filePath);

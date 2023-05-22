@@ -1,15 +1,19 @@
 #pragma once
 
 #include "types.h"
+#include "math.hpp"
 #include "vertexdata.hpp"
 
 #include <vector>
 
+struct ULod;
+struct UModel;
+struct UGeometry;
 namespace bStream {
     class CStream;
 }
 
-class UGeometry {
+class UGeometryData {
     uint64_t mVTable;
 
     UVertexBuffer mVertexBuffer;
@@ -22,8 +26,8 @@ class UGeometry {
     uint64_t m0038;
 
 public:
-    UGeometry();
-    virtual ~UGeometry();
+    UGeometryData();
+    virtual ~UGeometryData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
@@ -32,10 +36,10 @@ public:
     UIndexBuffer* GetIndexBuffer() { return &mIndexBuffer; }
 };
 
-class UModel {
+class UModelData {
     uint64_t mVTable;
 
-    std::vector<UGeometry*> mGeometry;
+    std::vector<UGeometryData*> mGeometry;
     uint32_t m0014;
 
     std::vector<UVector4> mBoundingBoxes;
@@ -50,17 +54,19 @@ class UModel {
     uint64_t m0038;
 
 public:
-    UModel();
-    virtual ~UModel();
+    UModelData();
+    virtual ~UModelData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
+
+    UModel* GetModel();
 
     void Debug_DumpObjFile(bStream::CStream* stream);
 };
 
 class ULodData {
-    std::vector<UModel*> mModels;
+    std::vector<UModelData*> mModels;
     uint32_t m000C;
 
 public:
@@ -69,6 +75,8 @@ public:
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
+
+    ULod* GetLod();
 
     void Debug_DumpObjFile();
 };
