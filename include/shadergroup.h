@@ -1,4 +1,4 @@
-#ifndef LIBDRAWABLE_SHADERGROUP_H
+/*#ifndef LIBDRAWABLE_SHADERGROUP_H
 #define LIBDRAWABLE_SHADERGROUP_H
 
 #include "types.h"
@@ -57,4 +57,4 @@ extern "C" {
 }
 #endif
 
-#endif
+#endif*/

@@ -6,10 +6,6 @@
 #include <array>
 #include <vector>
 
-namespace bStream {
-    class CStream;
-}
-
 /* The formats that vertex data can be stored in. */
 enum class EVertexFormat : uint8_t {
     VFT_NONE = 0,

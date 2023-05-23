@@ -2,6 +2,7 @@
 
 #include "math.hpp"
 #include "vertexdata.hpp"
+#include "skeleton.hpp"
 
 #include <iostream>
 #include <array>
@@ -86,8 +87,9 @@ struct ULod {
 struct UDrawable {
     std::string FileName;
     std::array<ULod*, 4> Lods = { nullptr, nullptr, nullptr, nullptr };
+    USkeleton* Skeleton;
 
-    UDrawable() : FileName("") { }
+    UDrawable() : FileName(""), Skeleton(nullptr) { }
 
     virtual ~UDrawable() {
         for (int i = 0; i < 4; i++) {
@@ -96,5 +98,8 @@ struct UDrawable {
                 Lods[i] = nullptr;
             }
         }
+
+        delete Skeleton;
+        Skeleton = nullptr;
     }
 };

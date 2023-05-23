@@ -9,9 +9,6 @@
 struct ULod;
 struct UModel;
 struct UGeometry;
-namespace bStream {
-    class CStream;
-}
 
 class UGeometryData {
     uint64_t mVTable;

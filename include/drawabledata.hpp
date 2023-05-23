@@ -1,16 +1,13 @@
 #pragma once
 
+#include "types.h"
 #include "math.hpp"
 
 #include <string>
 
 const uint32_t LOD_MAX = 4;
 
-class ULodData;
 struct UDrawable;
-namespace bStream {
-    class CStream;
-}
 
 /* The LOD levels that drawables can define. */
 enum class EDrawableLod : uint8_t {
@@ -27,13 +24,13 @@ class UDrawableData {
 
     class UBlockMap* mBlockMap;        // 0x08
     class UShaderGroup* mShaderGroup;  // 0x10
-    uint64_t mSkeletonData;      // 0x18
+    class USkeletonData* mSkeletonData;      // 0x18
 
     UVector4 mBoundingSphere; // 0x20, w is radius
     UVector4 mBoundingBoxMin; // 0x30, w has no meaning
     UVector4 mBoundingBoxMax; // 0x40, w has no meaning
 
-    ULodData* mLodData[LOD_MAX];   // 0x50, 0x58, 0x60, 0x68
+    class ULodData* mLodData[LOD_MAX];   // 0x50, 0x58, 0x60, 0x68
     float mLodDistances[LOD_MAX];  // 0x70, 0x74, 0x78, 0x7C
     uint32_t mLodFlags[LOD_MAX];   // 0x80, 0x84, 0x88, 0x8C
 

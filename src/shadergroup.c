@@ -1,4 +1,4 @@
-#include "shadergroup.h"
+/*#include "shadergroup.h"
 
 void DeserializeShader(UStream* stream, UShader* dst) {
 
@@ -14,4 +14,4 @@ void DeserializeShaderGroup(UStream* stream, UShaderGroup* dst) {
 
 void SerializeShaderGroup(UStream* stream, UShaderGroup* src) {
 
-}
+}*/

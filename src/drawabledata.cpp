@@ -1,12 +1,13 @@
 #include "drawabledata.hpp"
 #include "loddata.hpp"
+#include "skeletondata.hpp"
 #include "bstream.h"
 #include "drawable.hpp"
 
 
 /* UDrawable */
 
-UDrawableData::UDrawableData() {
+UDrawableData::UDrawableData() : mBlockMap(nullptr), mShaderGroup(nullptr), mSkeletonData(nullptr) {
 
 }
 
@@ -42,14 +43,13 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
     // Read skeleton data, if present
     uint64_t skeletonDataPtr = stream->readUInt64() & 0x0FFFFFFF;
     if (skeletonDataPtr != 0) {
-        /*
-        dst->mSkeletonData = (USkeletonData*)malloc(sizeof(USkeletonData));
+        mSkeletonData = new USkeletonData();
+        streamPos = stream->tell();
 
-        streamPos = stream->position;
-        UStreamSeek(stream, skeletonDataPtr - 0x50000000, 0);
-        DeserializeSkeletonData(stream, dst->mSkeletonData);
-        stream->position = streamPos;
-        */
+        stream->seek(skeletonDataPtr);
+        mSkeletonData->Deserialize(stream);
+
+        stream->seek(streamPos);
     }
 
     // Read bounding sphere
@@ -153,6 +153,10 @@ UDrawable* UDrawableData::GetDrawable() {
         drawable->Lods[i] = mLodData[i]->GetLod();
         drawable->Lods[i]->LodDistance = mLodDistances[i];
         drawable->Lods[i]->LodFlags = mLodFlags[i];
+    }
+
+    if (mSkeletonData != nullptr) {
+        drawable->Skeleton = mSkeletonData->GetSkeleton();
     }
 
     return drawable;
