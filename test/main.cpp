@@ -7,6 +7,6 @@
 #include <fstream>
 
 int main(int argc, char* argv[]) {
-    UDrawable* drw = ImportYdr("D:\\RedDead\\w_sp_bowarrow.ydr");
+    UDrawable* drw = ImportYdr("D:\\RedDead\\w_repeater_carbine01_grip1.ydr");
     delete drw;
 }

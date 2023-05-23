@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstring>
 #include <cassert>
+#include <string>
 
 namespace bStream {
 
@@ -425,9 +426,9 @@ void CFileStream::readBytesTo(uint8_t* out_buffer, size_t len){
 
 std::string CFileStream::readString(size_t len){
 	assert(mode == OpenMode::In);
-    std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
-    base.read(&str[0], len);
-    return str;
+	std::string str;
+	std::getline(base, str, '\0');
+	return str;
 }
 
 std::string CFileStream::peekString(size_t at, size_t len){

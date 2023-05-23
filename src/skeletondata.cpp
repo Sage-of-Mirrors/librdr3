@@ -95,24 +95,30 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
     uint16_t tagsCapacity = stream->readUInt16();
     m001C = stream->readUInt32();
 
-    uint32_t jointCount = stream->readUInt32();
+    uint32_t jointCountCopy = stream->readUInt32();
     uint32_t unk0024 = stream->readUInt32();
 
     uint64_t jointsPtr = stream->readUInt64() & 0x0FFFFFFF;
 
-    streamPos = stream->tell();
-    stream->seek(jointsPtr);
-    for (int i = 0; i < jointCount; i++) {
-        UJointData* joint = new UJointData();
-        joint->Deserialize(stream);
-
-        mJoints.push_back(joint);
-    }
-
-    stream->seek(streamPos);
-
     uint64_t inverseBindPosesPtr = stream->readUInt64() & 0x0FFFFFFF;
-    streamPos = stream->tell();
+    uint64_t bindPosesPtr = stream->readUInt64() & 0x0FFFFFFF;
+    uint64_t indicesPtr = stream->readUInt64() & 0x0FFFFFFF;
+    uint64_t unk0048Ptr = stream->readUInt64() & 0x0FFFFFFF;
+
+    uint32_t unk0050 = stream->readUInt32();
+    uint32_t unk0054 = stream->readUInt32();
+    uint32_t unk0058 = stream->readUInt32();
+
+    uint16_t unk005C = stream->readUInt16();
+    uint16_t jointCount = stream->readUInt16();
+
+    uint64_t unk0060 = stream->readUInt64();
+    uint64_t unk0068 = stream->readUInt64();
+
+    stream->seek(indicesPtr);
+    for (int i = 0; i < jointCount; i++) {
+        mIndices.push_back(stream->readUInt16());
+    }
 
     stream->seek(inverseBindPosesPtr);
     for (int i = 0; i < jointCount; i++) {
@@ -141,11 +147,6 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
         mInverseBindMatrices.push_back(mat);
     }
 
-    stream->seek(streamPos);
-
-    uint64_t bindPosesPtr = stream->readUInt64() & 0x0FFFFFFF;
-    streamPos = stream->tell();
-
     stream->seek(bindPosesPtr);
     for (int i = 0; i < jointCount; i++) {
         UMatrix4 mat;
@@ -173,29 +174,13 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
         mBindMatrices.push_back(mat);
     }
 
-    stream->seek(streamPos);
-
-    uint64_t indicesPtr = stream->readUInt64() & 0x0FFFFFFF;
-    streamPos = stream->tell();
-
-    stream->seek(indicesPtr);
+    stream->seek(jointsPtr);
     for (int i = 0; i < jointCount; i++) {
-        mIndices.push_back(stream->readUInt16());
+        UJointData* joint = new UJointData();
+        joint->Deserialize(stream);
+
+        mJoints.push_back(joint);
     }
-
-    stream->seek(streamPos);
-
-    uint64_t unk0048Ptr = stream->readUInt64() & 0x0FFFFFFF;
-
-    uint32_t unk0050 = stream->readUInt32();
-    uint32_t unk0054 = stream->readUInt32();
-    uint32_t unk0058 = stream->readUInt32();
-
-    uint16_t unk005C = stream->readUInt16();
-    uint16_t jointCountCopy = stream->readUInt16();
-
-    uint64_t unk0060 = stream->readUInt64();
-    uint64_t unk0068 = stream->readUInt64();
 }
 
 void USkeletonData::Serialize(bStream::CStream* stream) {
