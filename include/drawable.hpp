@@ -3,18 +3,53 @@
 #include "math.hpp"
 #include "vertexdata.hpp"
 
+#include <iostream>
 #include <array>
 #include <vector>
 #include <string>
 
 struct UGeometry {
-    std::vector<UVertex> Vertices;
+    std::vector<UVertex*> Vertices;
     std::vector<uint32_t> Indices;
 
     UGeometry() { }
 
+    std::vector<std::array<float, 3>> GetVertexPositionArray() {
+        std::vector<std::array<float, 3>> t;
+
+        for (int i = 0; i < Vertices.size(); i++) {
+            std::array<float, 3> b;
+            b[0] = Vertices[i]->Position[0].x;
+            b[1] = Vertices[i]->Position[0].y;
+            b[2] = Vertices[i]->Position[0].z;
+
+            t.push_back(b);
+        }
+
+        return t;
+    }
+
+    std::vector<std::array<uint32_t, 3>> GetIndexArray() {
+        std::vector<std::array<uint32_t, 3>> t;
+
+        for (int i = 2; i < Indices.size(); i += 3) {
+            std::array<uint32_t, 3> b;
+            b[0] = Indices[i - 2];
+            b[1] = Indices[i - 1];
+            b[2] = Indices[i];
+
+            t.push_back(b);
+        }
+
+        return t;
+    }
+
     virtual ~UGeometry() {
-        Vertices.clear();
+        for (int i = 0; i < Vertices.size(); i++) {
+            delete Vertices[i];
+            Vertices[i] = nullptr;
+        }
+
         Indices.clear();
     }
 };

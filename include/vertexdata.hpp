@@ -130,7 +130,7 @@ public:
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 
-    std::vector<UVertex> GetVertices();
+    std::vector<UVertex*> GetVertices();
 };
 
 class UIndexBuffer {

@@ -128,11 +128,11 @@ void UModelData::Debug_DumpObjFile(bStream::CStream* stream) {
     uint64_t vertexCount = 1;
 
     for (int i = 0; i < mGeometry.size(); i++) {
-        std::vector<UVertex> vertices = mGeometry[i]->GetVertexBuffer()->GetVertices();
+        std::vector<UVertex*> vertices = mGeometry[i]->GetVertexBuffer()->GetVertices();
         std::vector<uint32_t> indices = mGeometry[i]->GetIndexBuffer()->GetIndices();
 
-        for (UVertex& v : vertices) {
-            stream->writeString("v " + std::to_string(v.Position[0].x) + " " + std::to_string(v.Position[0].y) + " " + std::to_string(v.Position[0].z) + "\n");
+        for (UVertex* v : vertices) {
+            stream->writeString("v " + std::to_string(v->Position[0].x) + " " + std::to_string(v->Position[0].y) + " " + std::to_string(v->Position[0].z) + "\n");
         }
 
         stream->writeString("o geometry_" + std::to_string(i) + "\n");
