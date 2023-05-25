@@ -193,6 +193,7 @@ USkeleton* USkeletonData::GetSkeleton() {
     for (int i = 0; i < mJoints.size(); i++) {
         UJoint* joint = mJoints[i]->GetJoint();
         joint->InverseBindMatrix = mInverseBindMatrices[i];
+        joint->BindMatrix = mBindMatrices[i];
 
         skeleton->FlatSkeleton.push_back(joint);
     }

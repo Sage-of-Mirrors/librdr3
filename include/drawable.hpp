@@ -30,6 +30,40 @@ struct UGeometry {
         return t;
     }
 
+    std::vector<std::array<uint32_t, 4>> GetVertexBlendIndexArray() {
+        std::vector<std::array<uint32_t, 4>> t;
+
+        for (int i = 0; i < Vertices.size(); i++) {
+            std::array<uint32_t, 4> s;
+
+            s[0] = Vertices[i]->BlendIndex[0].x;
+            s[1] = Vertices[i]->BlendIndex[0].y;
+            s[2] = Vertices[i]->BlendIndex[0].z;
+            s[3] = Vertices[i]->BlendIndex[0].w;
+
+            t.push_back(s);
+        }
+
+        return t;
+    }
+
+    std::vector<std::array<float, 4>> GetVertexBlendWeightArray() {
+        std::vector<std::array<float, 4>> t;
+
+        for (int i = 0; i < Vertices.size(); i++) {
+            std::array<float, 4> s;
+
+            s[0] = Vertices[i]->BlendWeight[0].x;
+            s[1] = Vertices[i]->BlendWeight[0].y;
+            s[2] = Vertices[i]->BlendWeight[0].z;
+            s[3] = Vertices[i]->BlendWeight[0].w;
+
+            t.push_back(s);
+        }
+
+        return t;
+    }
+
     std::vector<std::array<uint32_t, 3>> GetIndexArray() {
         std::vector<std::array<uint32_t, 3>> t;
 

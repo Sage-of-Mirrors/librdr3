@@ -10,6 +10,7 @@
 struct UJoint {
     std::string Name;
     UMatrix4 InverseBindMatrix;
+    UMatrix4 BindMatrix;
 
     UVector4 Rotation;
     UVector3 Translation;
@@ -46,30 +47,62 @@ struct UJoint {
         return t;
     }
 
-    std::array<float, 16> GetInverseBindMatrix() {
-        std::array<float, 16> t;
+    std::array<std::array<float, 4>, 4> GetInverseBindMatrix() {
+        std::array<float, 4> r0;
+        std::array<float, 4> r1;
+        std::array<float, 4> r2;
+        std::array<float, 4> r3;
 
-        t[0] = InverseBindMatrix.r0.x;
-        t[1] = InverseBindMatrix.r0.y;
-        t[2] = InverseBindMatrix.r0.z;
-        t[3] = InverseBindMatrix.r0.w;
+        r0[0] = InverseBindMatrix.r0.x;
+        r0[1] = InverseBindMatrix.r0.y;
+        r0[2] = InverseBindMatrix.r0.z;
+        r0[3] = InverseBindMatrix.r0.w;
 
-        t[4] = InverseBindMatrix.r1.x;
-        t[5] = InverseBindMatrix.r1.y;
-        t[6] = InverseBindMatrix.r1.z;
-        t[7] = InverseBindMatrix.r1.w;
+        r1[0] = InverseBindMatrix.r1.x;
+        r1[1] = InverseBindMatrix.r1.y;
+        r1[2] = InverseBindMatrix.r1.z;
+        r1[3] = InverseBindMatrix.r1.w;
 
-        t[8] = InverseBindMatrix.r2.x;
-        t[9] = InverseBindMatrix.r2.y;
-        t[10] = InverseBindMatrix.r2.z;
-        t[11] = InverseBindMatrix.r2.w;
+        r2[0] = InverseBindMatrix.r2.x;
+        r2[1] = InverseBindMatrix.r2.y;
+        r2[2] = InverseBindMatrix.r2.z;
+        r2[3] = InverseBindMatrix.r2.w;
 
-        t[12] = InverseBindMatrix.r3.x;
-        t[13] = InverseBindMatrix.r3.y;
-        t[14] = InverseBindMatrix.r3.z;
-        t[15] = InverseBindMatrix.r3.w;
+        r3[0] = InverseBindMatrix.r3.x;
+        r3[1] = InverseBindMatrix.r3.y;
+        r3[2] = InverseBindMatrix.r3.z;
+        r3[3] = InverseBindMatrix.r3.w;
 
-        return t;
+        return std::array<std::array<float, 4>, 4> {r0, r1, r2, r3};
+    }
+
+    std::array<std::array<float, 4>, 4> GetBindMatrix() {
+        std::array<float, 4> r0;
+        std::array<float, 4> r1;
+        std::array<float, 4> r2;
+        std::array<float, 4> r3;
+
+        r0[0] = BindMatrix.r0.x;
+        r0[1] = BindMatrix.r0.y;
+        r0[2] = BindMatrix.r0.z;
+        r0[3] = BindMatrix.r0.w;
+
+        r1[0] = BindMatrix.r1.x;
+        r1[1] = BindMatrix.r1.y;
+        r1[2] = BindMatrix.r1.z;
+        r1[3] = BindMatrix.r1.w;
+
+        r2[0] = BindMatrix.r2.x;
+        r2[1] = BindMatrix.r2.y;
+        r2[2] = BindMatrix.r2.z;
+        r2[3] = BindMatrix.r2.w;
+
+        r3[0] = BindMatrix.r3.x;
+        r3[1] = BindMatrix.r3.y;
+        r3[2] = BindMatrix.r3.z;
+        r3[3] = BindMatrix.r3.w;
+
+        return std::array<std::array<float, 4>, 4> {r0, r1, r2, r3};
     }
 };
 
