@@ -7,7 +7,7 @@
 
 /* UDrawable */
 
-UDrawableData::UDrawableData() : mBlockMap(nullptr), mShaderGroup(nullptr), mSkeletonData(nullptr) {
+UDrawableData::UDrawableData() : mBlockMap(nullptr), mSkeletonData(nullptr) {
 
 }
 
@@ -36,7 +36,7 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
     uint64_t shaderGroupPtr = stream->readUInt64() & 0x0FFFFFFF;
     streamPos = stream->tell();
     stream->seek(shaderGroupPtr);
-    //mShaderGroup.Deserialize(stream);
+    mShaderGroup.Deserialize(stream);
 
     stream->seek(streamPos);
 

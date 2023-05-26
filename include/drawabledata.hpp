@@ -3,6 +3,8 @@
 #include "types.h"
 #include "math.hpp"
 
+#include "shaderdata.hpp"
+
 #include <string>
 
 const uint32_t LOD_MAX = 4;
@@ -23,7 +25,7 @@ class UDrawableData {
     uint64_t mVTable;            // 0x00
 
     class UBlockMap* mBlockMap;        // 0x08
-    class UShaderGroup* mShaderGroup;  // 0x10
+    UShaderGroup mShaderGroup;  // 0x10
     class USkeletonData* mSkeletonData;      // 0x18
 
     UVector4 mBoundingSphere; // 0x20, w is radius
