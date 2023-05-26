@@ -123,7 +123,9 @@ struct UDrawable {
     std::array<ULod*, 4> Lods = { nullptr, nullptr, nullptr, nullptr };
     USkeleton* Skeleton;
 
-    UDrawable() : FileName(""), Skeleton(nullptr) { }
+    uint32_t DictionaryHash;
+
+    UDrawable() : FileName(""), Skeleton(nullptr), DictionaryHash(0) { }
 
     virtual ~UDrawable() {
         for (int i = 0; i < 4; i++) {

@@ -86,7 +86,6 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(lodDataPtr);
         mLodData[i]->Deserialize(stream);
-        mLodData[i]->Debug_DumpObjFile();
 
         stream->seek(streamPos);
     }

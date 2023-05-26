@@ -64,5 +64,12 @@ void UDrawableDictionaryData::Serialize(bStream::CStream* stream) {
 UDrawableDictionary* UDrawableDictionaryData::GetDrawableDictionary() {
     UDrawableDictionary* dict = new UDrawableDictionary();
 
+    for (int i = 0; i < mDrawables.size(); i++) {
+        UDrawable* drawable = mDrawables[i]->GetDrawable();
+        drawable->DictionaryHash = mHashes[i];
+
+        dict->Drawables.push_back(drawable);
+    }
+
     return dict;
 }
