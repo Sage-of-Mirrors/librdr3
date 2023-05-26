@@ -25,18 +25,20 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
 
     // Read blockmap
     uint64_t blockMapPtr = stream->readUInt64() & 0x0FFFFFFF;
-    streamPos = stream->tell();
-    stream->seek(blockMapPtr);
-    //mBlockMap.Deserialize(stream);
+    if (blockMapPtr != 0) {
+        streamPos = stream->tell();
+        stream->seek(blockMapPtr);
+        //mBlockMap.Deserialize(stream);
 
-    stream->seek(streamPos);
+        stream->seek(streamPos);
+    }
 
     // Read shader data
 
     uint64_t shaderGroupPtr = stream->readUInt64() & 0x0FFFFFFF;
     streamPos = stream->tell();
     stream->seek(shaderGroupPtr);
-    mShaderGroup.Deserialize(stream);
+    //mShaderGroup.Deserialize(stream);
 
     stream->seek(streamPos);
 
@@ -84,6 +86,7 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(lodDataPtr);
         mLodData[i]->Deserialize(stream);
+        mLodData[i]->Debug_DumpObjFile();
 
         stream->seek(streamPos);
     }
