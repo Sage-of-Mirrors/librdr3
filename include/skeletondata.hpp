@@ -56,6 +56,8 @@ class USkeletonData {
 
     std::vector<uint16_t> mIndices;
 
+    uint16_t mExternalParentJointTag; // This is the tag of this skeleton's parent joint in another skeleton, e.g. fragments.
+
 public:
     USkeletonData();
     virtual ~USkeletonData();

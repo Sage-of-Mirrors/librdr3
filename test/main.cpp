@@ -8,9 +8,9 @@
 #include <fstream>
 
 int main(int argc, char* argv[]) {
-    //UDrawable* drw = ImportYdr("D:\\RedDead\\p_coin01x.ydr");
-    //delete drw;
+    UDrawable* drw = ImportYdr("D:\\RedDead\\w_repeater_carbine01.ydr");
+    delete drw;
 
-    UDrawableDictionary* dict = ImportYdd("D:\\RedDead\\player_three_merge.ydd");
-    delete dict;
+    //UDrawableDictionary* dict = ImportYdd("D:\\RedDead\\player_merge_10.ydd");
+    //delete dict;
 }

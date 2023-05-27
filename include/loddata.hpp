@@ -42,8 +42,8 @@ class UModelData {
     std::vector<UVector4> mBoundingBoxes;
     std::vector<uint16_t> mShaderIndices;
 
-    uint16_t mBoneIndices;
-    uint32_t mSkeletonBinding;
+    std::vector<uint16_t> mBoneTagMap;
+    bool mIsSkinned;
 
     uint16_t mRenderMaskFlags;
     uint16_t mShaderIndexCount;

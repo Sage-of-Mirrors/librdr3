@@ -112,7 +112,11 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
     uint16_t unk005C = stream->readUInt16();
     uint16_t jointCount = stream->readUInt16();
 
-    uint64_t unk0060 = stream->readUInt64();
+    uint8_t unk0060 = stream->readUInt8();
+    uint8_t unk0061 = stream->readUInt8();
+    mExternalParentJointTag = stream->readUInt16();
+
+    uint32_t unk0064 = stream->readUInt32();
     uint64_t unk0068 = stream->readUInt64();
 
     stream->seek(indicesPtr);

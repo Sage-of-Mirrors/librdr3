@@ -82,12 +82,23 @@ void UModelData::Deserialize(bStream::CStream* stream) {
     */
 
     uint64_t shaderIndicesPtr = stream->readUInt64() & 0x0FFFFFFF;
-    uint64_t boneIndicesPtr = stream->readUInt64() & 0x0FFFFFFF;
+    uint64_t boneTagMapPtr = stream->readUInt64() & 0x0FFFFFFF;
 
-    mSkeletonBinding = stream->readUInt32();
+    uint8_t boneTagMapCount = stream->readUInt8();
+    mIsSkinned = stream->readUInt8();
+    uint16_t unk0032 = stream->readUInt16();
+
     mRenderMaskFlags = stream->readUInt16();
     mShaderIndexCount = stream->readUInt16();
     m0038 = stream->readUInt64();
+
+    if (boneTagMapPtr != 0) {
+        stream->seek(boneTagMapPtr);
+
+        for (int i = 0; i < boneTagMapCount; i++) {
+            mBoneTagMap.push_back(stream->readUInt16());
+        }
+    }
 
     stream->seek(geometryPtr);
 
