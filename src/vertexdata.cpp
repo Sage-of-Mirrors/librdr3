@@ -85,33 +85,92 @@ void UVertexBuffer::Serialize(bStream::CStream* stream) {
 
 }
 
-float UVertexBuffer::ReadVertexComponent(bStream::CStream& stream, EVertexFormat format) {
-    float result = 0.0f;
-
+std::array<float, 4> UVertexBuffer::ReadVertexComponent(bStream::CStream& stream, EVertexFormat format) {
     switch (format) {
         case EVertexFormat::VFT_RGBA32_FLOAT:
+        {
+            return {
+                stream.readFloat(),
+                stream.readFloat(),
+                stream.readFloat(),
+                stream.readFloat()
+            };
+        }
         case EVertexFormat::VFT_RGB32_FLOAT:
+        {
+            return {
+                stream.readFloat(),
+                stream.readFloat(),
+                stream.readFloat(),
+                0.0f
+            };
+        }
         case EVertexFormat::VFT_RG32:
-            result = stream.readFloat();
-            break;
+        {
+            return {
+                stream.readFloat(),
+                stream.readFloat(),
+                0.0f,
+                0.0f
+            };
+        }
         case EVertexFormat::VFT_RGBA16_FLOAT:
+        {
+            return {
+                static_cast<float>(stream.readUInt16()),
+                static_cast<float>(stream.readUInt16()),
+                static_cast<float>(stream.readUInt16()),
+                static_cast<float>(stream.readUInt16())
+            };
+        }
         case EVertexFormat::VFT_RG16_FLOAT:
-            result = (float)stream.readUInt16();
-            break;
+        {
+            return {
+                static_cast<float>(stream.readUInt16()),
+                static_cast<float>(stream.readUInt16()),
+                0.0f,
+                0.0f
+            };
+        }
         case EVertexFormat::VFT_RGB10A2:
-            break;
+        {
+            uint32_t data = stream.readUInt32();
+            return {
+                ((static_cast<float>(data & 0x3FF) / 1023.0f) * 2) - 1,
+                ((static_cast<float>(((data >> 10) & 0x3FF)) / 1023.0f) * 2) - 1,
+                ((static_cast<float>(((data >> 20) & 0x3FF)) / 1023.0f) * 2) - 1,
+                0.0f
+            };
+        }
         case EVertexFormat::VFT_RGBA8_UNORM:
-            result = (float)stream.readUInt8() / 255.0f;
-            break;
+        {
+            return {
+                static_cast<float>(stream.readUInt8()) / 255.0f,
+                static_cast<float>(stream.readUInt8()) / 255.0f,
+                static_cast<float>(stream.readUInt8()) / 255.0f,
+                static_cast<float>(stream.readUInt8()) / 255.0f
+            };
+        }
         case EVertexFormat::VFT_RGBA8_UINT:
-            result = (float)stream.readUInt8();
-            break;
+        {
+            return {
+                static_cast<float>(stream.readUInt8()),
+                static_cast<float>(stream.readUInt8()),
+                static_cast<float>(stream.readUInt8()),
+                static_cast<float>(stream.readUInt8())
+            };
+        }
         case EVertexFormat::VFT_NONE:
         default:
-            break;
+        {
+            return {
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f
+            };
+        }
     }
-
-    return result;
 }
 
 std::vector<UVertex*> UVertexBuffer::GetVertices() {
@@ -127,6 +186,7 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
             }
 
             bufferStream.seek(mVertexFormat.mOffsets[atr] + vtx * mVertexFormat.mSizes[atr]);
+            std::array<float, 4> vertData = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
 
             switch ((EVertexAttribute)atr) {
                 case EVertexAttribute::VAT_POSITION:
@@ -134,9 +194,9 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 case EVertexAttribute::VAT_POSITION2:
                 case EVertexAttribute::VAT_POSITION3:
                 {
-                    newVertex->Position[atr].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Position[atr].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Position[atr].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->Position[atr].x = vertData[0];
+                    newVertex->Position[atr].y = vertData[1];
+                    newVertex->Position[atr].z = vertData[2];
 
                     break;
                 }
@@ -147,9 +207,9 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t nrmIndex = atr - (uint32_t)EVertexAttribute::VAT_NORMAL;
 
-                    newVertex->Normal[nrmIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Normal[nrmIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Normal[nrmIndex].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->Normal[nrmIndex].x = vertData[0];
+                    newVertex->Normal[nrmIndex].y = vertData[1];
+                    newVertex->Normal[nrmIndex].z = vertData[2];
 
                     break;
                 }
@@ -160,9 +220,9 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t tgtIndex = atr - (uint32_t)EVertexAttribute::VAT_TANGENT;
 
-                    newVertex->Tangent[tgtIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Tangent[tgtIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Tangent[tgtIndex].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->Tangent[tgtIndex].x = vertData[0];
+                    newVertex->Tangent[tgtIndex].y = vertData[1];
+                    newVertex->Tangent[tgtIndex].z = vertData[2];
 
                     break;
                 }
@@ -173,9 +233,9 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t binIndex = atr - (uint32_t)EVertexAttribute::VAT_BINORMAL;
 
-                    newVertex->Binormal[binIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Binormal[binIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Binormal[binIndex].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->Binormal[binIndex].x = vertData[0];
+                    newVertex->Binormal[binIndex].y = vertData[1];
+                    newVertex->Binormal[binIndex].z = vertData[2];
 
                     break;
                 }
@@ -186,10 +246,10 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t bwtIndex = atr - (uint32_t)EVertexAttribute::VAT_BLENDWEIGHT;
 
-                    newVertex->BlendWeight[bwtIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->BlendWeight[bwtIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->BlendWeight[bwtIndex].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->BlendWeight[bwtIndex].w = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->BlendWeight[bwtIndex].x = vertData[0];
+                    newVertex->BlendWeight[bwtIndex].y = vertData[1];
+                    newVertex->BlendWeight[bwtIndex].z = vertData[2];
+                    newVertex->BlendWeight[bwtIndex].w = vertData[3];
 
                     break;
                 }
@@ -200,10 +260,10 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t bidIndex = atr - (uint32_t)EVertexAttribute::VAT_BLENDINDEX;
 
-                    newVertex->BlendIndex[bidIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->BlendIndex[bidIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->BlendIndex[bidIndex].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->BlendIndex[bidIndex].w = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->BlendIndex[bidIndex].x = vertData[0];
+                    newVertex->BlendIndex[bidIndex].y = vertData[1];
+                    newVertex->BlendIndex[bidIndex].z = vertData[2];
+                    newVertex->BlendIndex[bidIndex].w = vertData[3];
 
                     break;
                 }
@@ -214,10 +274,10 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t colIndex = atr - (uint32_t)EVertexAttribute::VAT_COLOR;
 
-                    newVertex->Color[colIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Color[colIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Color[colIndex].z = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->Color[colIndex].w = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->Color[colIndex].x = vertData[0];
+                    newVertex->Color[colIndex].y = vertData[1];
+                    newVertex->Color[colIndex].z = vertData[2];
+                    newVertex->Color[colIndex].w = vertData[3];
 
                     break;
                 }
@@ -248,8 +308,8 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                 {
                     uint32_t txcIndex = atr - (uint32_t)EVertexAttribute::VAT_TEXCOORD;
 
-                    newVertex->TexCoord[txcIndex].x = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
-                    newVertex->TexCoord[txcIndex].y = ReadVertexComponent(bufferStream, mVertexFormat.mTypes[atr]);
+                    newVertex->TexCoord[txcIndex].x = vertData[0];
+                    newVertex->TexCoord[txcIndex].y = vertData[1];
 
                     break;
                 }

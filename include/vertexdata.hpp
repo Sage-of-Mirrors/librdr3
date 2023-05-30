@@ -117,7 +117,7 @@ class UVertexBuffer {
     uint64_t mShaderResourceView; // 0x30
     UVertexFormat mVertexFormat;  // 0x38
 
-    float ReadVertexComponent(bStream::CStream& stream, EVertexFormat format);
+    std::array<float, 4> ReadVertexComponent(bStream::CStream& stream, EVertexFormat format);
 
 public:
     UVertexBuffer();

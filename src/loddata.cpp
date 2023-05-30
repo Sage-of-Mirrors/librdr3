@@ -144,6 +144,8 @@ void UModelData::Debug_DumpObjFile(bStream::CStream* stream) {
 
         for (UVertex* v : vertices) {
             stream->writeString("v " + std::to_string(v->Position[0].x) + " " + std::to_string(v->Position[0].y) + " " + std::to_string(v->Position[0].z) + "\n");
+            stream->writeString("vt " + std::to_string(v->TexCoord[0].x) + " " + std::to_string(v->TexCoord[0].y) + "\n");
+            stream->writeString("vn " + std::to_string(v->Normal[0].x) + " " + std::to_string(v->Normal[0].y) + " " + std::to_string(v->Normal[0].z) + "\n");
         }
 
         stream->writeString("o geometry_" + std::to_string(i) + "\n");
@@ -151,9 +153,13 @@ void UModelData::Debug_DumpObjFile(bStream::CStream* stream) {
         for (int i = 0; i < indices.size() / 3; i++) {
             int index = i * 3;
 
-            stream->writeString("f " + std::to_string(indices[index] + vertexCount) + " " +
-                                       std::to_string(indices[index + 1] + vertexCount) + " " +
-                                       std::to_string(indices[index + 2] + vertexCount) + "\n");
+            std::string v1 = std::to_string(indices[index] + vertexCount);
+            std::string v2 = std::to_string(indices[index + 1] + vertexCount);
+            std::string v3 = std::to_string(indices[index + 2] + vertexCount);
+
+            stream->writeString("f " + v1 + "/" + v1 + "/" + v1 + " " +
+                                       v2 + "/" + v2 + "/" + v2 + " " +
+                                       v3 + "/" + v3 + "/" + v3 + "\n");
         }
 
         vertexCount += vertices.size();
