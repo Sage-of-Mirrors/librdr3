@@ -309,7 +309,7 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
                     uint32_t txcIndex = atr - (uint32_t)EVertexAttribute::VAT_TEXCOORD;
 
                     newVertex->TexCoord[txcIndex].x = vertData[0];
-                    newVertex->TexCoord[txcIndex].y = vertData[1];
+                    newVertex->TexCoord[txcIndex].y = 1.0f - vertData[1];
 
                     break;
                 }
