@@ -38,6 +38,19 @@ void UGeometryData::Serialize(bStream::CStream* stream) {
 
 }
 
+std::array<uint32_t, 8> UGeometryData::GetAttributeCounts() {
+    return {
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_POSITION), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_NORMAL), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_TANGENT), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_BINORMAL), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_BLENDINDEX), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_BLENDWEIGHT), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_COLOR), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_TEXCOORD), 24),
+    };
+}
+
 /* UModel */
 
 UModelData::UModelData() {
@@ -128,6 +141,16 @@ UModel* UModelData::GetModel() {
 
         geom->Vertices = geomData->GetVertexBuffer()->GetVertices();
         geom->Indices = geomData->GetIndexBuffer()->GetIndices();
+
+        std::array<uint32_t, 8> attributeCounts = geomData->GetAttributeCounts();
+        geom->PositionsCount = attributeCounts[0];
+        geom->NormalsCount = attributeCounts[1];
+        geom->TangentsCount = attributeCounts[2];
+        geom->BinormalsCount = attributeCounts[3];
+        geom->BlendIndicesCount = attributeCounts[4];
+        geom->BlendWeightsCount = attributeCounts[5];
+        geom->ColorsCount = attributeCounts[6];
+        geom->TexCoordsCount = attributeCounts[7];
 
         model->Geometries.push_back(geom);
     }

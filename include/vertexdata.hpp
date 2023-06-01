@@ -127,6 +127,8 @@ public:
     void Serialize(bStream::CStream* stream);
 
     std::vector<UVertex*> GetVertices();
+    
+    uint32_t GetAttributeCount(uint32_t startingIndex, uint32_t max);
 };
 
 class UIndexBuffer {

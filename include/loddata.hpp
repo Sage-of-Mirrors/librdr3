@@ -31,6 +31,8 @@ public:
 
     UVertexBuffer* GetVertexBuffer() { return &mVertexBuffer; }
     UIndexBuffer* GetIndexBuffer() { return &mIndexBuffer; }
+
+    std::array<uint32_t, 8> GetAttributeCounts();
 };
 
 class UModelData {

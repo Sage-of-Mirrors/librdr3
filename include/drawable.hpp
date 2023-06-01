@@ -13,6 +13,15 @@ struct UGeometry {
     std::vector<UVertex*> Vertices;
     std::vector<uint32_t> Indices;
 
+    uint32_t PositionsCount = 0;
+    uint32_t NormalsCount = 0;
+    uint32_t TangentsCount = 0;
+    uint32_t BinormalsCount = 0;
+    uint32_t BlendIndicesCount = 0;
+    uint32_t BlendWeightsCount = 0;
+    uint32_t ColorsCount = 0;
+    uint32_t TexCoordsCount = 0;
+
     UGeometry() { }
 
     virtual ~UGeometry() {

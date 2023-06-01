@@ -322,6 +322,18 @@ std::vector<UVertex*> UVertexBuffer::GetVertices() {
     return vertices;
 }
 
+uint32_t UVertexBuffer::GetAttributeCount(uint32_t startingIndex, uint32_t max) {
+    uint32_t count = 0;
+    
+    for (int i = 0; i < max; i++) {
+        if (mVertexFormat.mSizes[startingIndex + i] != 0) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 
 /* UIndexBuffer */
 
