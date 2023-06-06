@@ -9,6 +9,49 @@
 #include <vector>
 #include <string>
 
+struct UShaderUniform {
+    std::string Name = "";
+    uint32_t Hash = 0;
+    std::vector<float> Data;
+
+    UShaderUniform() { }
+
+    UShaderUniform(UShaderUniform& src) {
+        Name = src.Name.data();
+        Hash = src.Hash;
+
+        for (int i = 0; i < src.Data.size(); i++) {
+            Data.push_back(src.Data[i]);
+        }
+    }
+};
+
+struct UShader {
+    std::string Name = "";
+    uint32_t Hash = 0;
+    std::vector<UShaderUniform*> Uniforms;
+
+    UShader() { }
+
+    UShader(UShader& src) {
+        Name = src.Name.data();
+        Hash = src.Hash;
+
+        for (UShaderUniform* u : src.Uniforms) {
+            Uniforms.push_back(new UShaderUniform(*u));
+        }
+    }
+
+    virtual ~UShader() {
+        for (int i = 0; i < Uniforms.size(); i++) {
+            delete Uniforms[i];
+            Uniforms[i] = nullptr;
+        }
+
+        Uniforms.clear();
+    }
+};
+
 struct UGeometry {
     std::vector<UVertex*> Vertices;
     std::vector<uint32_t> Indices;
@@ -22,12 +65,24 @@ struct UGeometry {
     uint32_t ColorsCount = 0;
     uint32_t TexCoordsCount = 0;
 
-    UGeometry() { }
+    uint16_t ShaderIndex;
+    UShader* Shader = nullptr;
 
     virtual ~UGeometry() {
         for (int i = 0; i < Vertices.size(); i++) {
             delete Vertices[i];
             Vertices[i] = nullptr;
+        }
+
+        if (Shader) {
+            try {
+                delete Shader;
+            }
+            catch (std::exception e) {
+
+            }
+
+            Shader = nullptr;
         }
 
         Vertices.clear();
@@ -51,10 +106,8 @@ struct UModel {
 struct ULod {
     std::vector<UModel*> Models;
 
-    float LodDistance;
-    uint32_t LodFlags;
-
-    ULod() : LodDistance(0.0f), LodFlags(0) { }
+    float LodDistance = 0.0f;
+    uint32_t LodFlags = 0;
 
     virtual ~ULod() {
         for (int i = 0; i < Models.size(); i++) {
@@ -65,9 +118,9 @@ struct ULod {
 };
 
 struct UDrawable {
-    std::string FileName;
+    std::string FileName = "";
     std::array<ULod*, 4> Lods = { nullptr, nullptr, nullptr, nullptr };
-    USkeleton* Skeleton;
+    USkeleton* Skeleton = nullptr;
 
     uint32_t DictionaryHash;
 

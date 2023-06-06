@@ -1,6 +1,6 @@
 #pragma once
 
-const uint32_t LEN_SHADER_PARAM_NAMES = 852;
+const uint32_t LEN_SHADER_PARAM_NAMES = 856;
 
 const char* SHADER_PARAM_NAMES[] {
     "trilinearclamp",
@@ -13,6 +13,9 @@ const char* SHADER_PARAM_NAMES[] {
     "anisotropic16xwrap",
     "raintexturesamplerglobal",
     "gcsmshadowtexturesamp",
+    "bumpsampler",
+    "diffusesampler",
+    "specsampler",
     "specsampler2",
     "_padding_0_",
     "_alphatocoveragescale",
@@ -339,6 +342,7 @@ const char* SHADER_PARAM_NAMES[] {
     "pxmenabled",
     "pxmscales1234",
     "radiusscale",
+    "reflectivity",
     "regiontintamount",
     "ripplebumpiness",
     "ripplescale",

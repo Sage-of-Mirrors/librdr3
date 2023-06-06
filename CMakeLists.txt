@@ -13,5 +13,5 @@ add_library(libdrawable ${LIBDRAWABLE_SRC})
 
 target_include_directories(libdrawable PUBLIC include)
 
-add_executable(tester test/main.cpp)
+add_executable(tester test/main.cpp test/json.hpp)
 target_link_libraries(tester libdrawable)

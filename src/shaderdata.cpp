@@ -5,6 +5,9 @@
 #include "shadernames.hpp"
 #include "shaderparamnames.hpp"
 
+#include "drawable.hpp"
+
+#include <fstream>
 
 /* UTextureData */
 
@@ -27,40 +30,44 @@ void UTextureData::Serialize(bStream::CStream* stream) {
 
 /* UShaderParameter */
 
-UShaderParameter::UShaderParameter() : mName("") {
+UShaderUniformData::UShaderUniformData() : mName("") {
 
 }
 
-UShaderParameter::~UShaderParameter() {
+UShaderUniformData::~UShaderUniformData() {
 
 }
 
-void UShaderParameter::Deserialize(bStream::CStream* stream, uint64_t parametersPtr) {
+void UShaderUniformData::Deserialize(bStream::CStream* stream, uint64_t parametersPtr) {
     mNameHash = stream->readUInt32();
     uint32_t packedField = stream->readUInt32();
 
     mType  =  (EParameterType)(packedField & 0x00000003);
     mIndex = (packedField & 0x000000FC) >> 0x02;
 
-    mBufferIndex     = (packedField & 0x000000C0) >> 0x02;
-    mParameterOffset = (packedField & 0x000FFF00) >> 0x08;
-    mParameterSize   = (packedField & 0xFFF00000) >> 0x14;
+    mBufferIndex   = (packedField & 0x000000C0) >> 0x02;
+    mUniformOffset = (packedField & 0x000FFF00) >> 0x08;
+    mUniformSize   = (packedField & 0xFFF00000) >> 0x14;
 
-    mParameterSize /= sizeof(float);
-    assert(mParameterSize <= 4);
+    if (mBufferIndex >= 4) {
+        return;
+    }
+
+    mUniformSize /= sizeof(float);
+    assert(mUniformSize <= 64);
 
     if (mType == EParameterType::PRM_PARAMETER) {
         // Calculate offset for parameter data
 
         uint64_t bufferOffset = mBufferIndex * sizeof(uint64_t);
         uint64_t dataPtr = stream->peekUInt64(parametersPtr + bufferOffset) & 0x0FFFFFFF;
-        dataPtr += mParameterOffset;
+        dataPtr += mUniformOffset;
 
         // Read parameter data
         size_t streamPos = stream->tell();
         stream->seek(dataPtr);
 
-        for (int i = 0; i < mParameterSize; i++) {
+        for (int i = 0; i < mUniformSize; i++) {
             mData[i] = stream->readFloat();
         }
 
@@ -82,24 +89,37 @@ void UShaderParameter::Deserialize(bStream::CStream* stream, uint64_t parameters
     }
 }
 
-void UShaderParameter::Serialize(bStream::CStream* stream) {
+void UShaderUniformData::Serialize(bStream::CStream* stream) {
 
 }
 
+UShaderUniform* UShaderUniformData::GetShaderUniform() {
+    UShaderUniform* uniform = new UShaderUniform();
 
-/* UShader */
+    uniform->Name = mName.data();
+    uniform->Hash = mNameHash;
 
-UShader::UShader() : mName("") {
-
-}
-
-UShader::~UShader() {
-    for (int i = 0; i < mParameters.size(); i++) {
-        delete mParameters[i];
-        mParameters[i] = nullptr;
+    for (int i = 0; i < mUniformSize; i++) {
+        uniform->Data.push_back(mData[i]);
     }
 
-    mParameters.clear();
+    return uniform;
+}
+
+
+/* UShaderData */
+
+UShaderData::UShaderData() : mName("") {
+
+}
+
+UShaderData::~UShaderData() {
+    for (int i = 0; i < mUniforms.size(); i++) {
+        delete mUniforms[i];
+        mUniforms[i] = nullptr;
+    }
+
+    mUniforms.clear();
 
     for (int i = 0; i < mTextures.size(); i++) {
         delete mTextures[i];
@@ -109,7 +129,7 @@ UShader::~UShader() {
     mTextures.clear();
 }
 
-void UShader::Deserialize(bStream::CStream* stream) {
+void UShaderData::Deserialize(bStream::CStream* stream) {
     mNameHash = stream->readUInt32();
     mType = stream->readUInt32();
 
@@ -141,10 +161,10 @@ void UShader::Deserialize(bStream::CStream* stream) {
     uint32_t numParameters = stream->readUInt32();
 
     for (int i = 0; i < numParameters; i++) {
-        UShaderParameter* newParam = new UShaderParameter();
+        UShaderUniformData* newParam = new UShaderUniformData();
         newParam->Deserialize(stream, parametersPtr);
 
-        mParameters.push_back(newParam);
+        mUniforms.push_back(newParam);
     }
 
     // Read texture data
@@ -186,18 +206,31 @@ void UShader::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UShader::Serialize(bStream::CStream* stream) {
+void UShaderData::Serialize(bStream::CStream* stream) {
 
 }
 
+UShader* UShaderData::GetShader() {
+    UShader* shader = new UShader();
 
-/* UShaderGroup */
+    shader->Name = mName.data();
+    shader->Hash = mNameHash;
 
-UShaderGroup::UShaderGroup() {
+    for (UShaderUniformData* d : mUniforms) {
+        shader->Uniforms.push_back(d->GetShaderUniform());
+    }
+
+    return shader;
+}
+
+
+/* UShaderContainer */
+
+UShaderContainer::UShaderContainer() {
 
 }
 
-UShaderGroup::~UShaderGroup() {
+UShaderContainer::~UShaderContainer() {
     for (int i = 0; i < mShaders.size(); i++) {
         delete mShaders[i];
         mShaders[i] = nullptr;
@@ -206,7 +239,7 @@ UShaderGroup::~UShaderGroup() {
     mShaders.clear();
 }
 
-void UShaderGroup::Deserialize(bStream::CStream* stream) {
+void UShaderContainer::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
     mTextureDictionaryPtr = stream->readUInt64() & 0x0FFFFFFF;
 
@@ -234,7 +267,7 @@ void UShaderGroup::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curShaderPtr);
 
-        UShader* newShader = new UShader();
+        UShaderData* newShader = new UShaderData();
         newShader->Deserialize(stream);
         mShaders.push_back(newShader);
 
@@ -242,10 +275,16 @@ void UShaderGroup::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UShaderGroup::Serialize(bStream::CStream* stream) {
+void UShaderContainer::Serialize(bStream::CStream* stream) {
 
 }
 
-void UShaderGroup::GetShaders() {
+std::vector<UShader*> UShaderContainer::GetShaders() {
+    std::vector<UShader*> shaders;
 
+    for (UShaderData* d : mShaders) {
+        shaders.push_back(d->GetShader());
+    }
+
+    return shaders;
 }

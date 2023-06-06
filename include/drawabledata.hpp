@@ -25,7 +25,7 @@ class UDrawableData {
     uint64_t mVTable;            // 0x00
 
     class UBlockMap* mBlockMap;        // 0x08
-    UShaderGroup mShaderGroup;  // 0x10
+    UShaderContainer mShaderContainer;  // 0x10
     class USkeletonData* mSkeletonData;      // 0x18
 
     UVector4 mBoundingSphere; // 0x20, w is radius

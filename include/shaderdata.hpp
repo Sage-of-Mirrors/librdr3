@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+struct UShader;
+struct UShaderUniform;
 
 enum class EParameterType : uint8_t {
     PRM_TEXTURE,
@@ -23,32 +25,34 @@ public:
     void Serialize(bStream::CStream* stream);
 };
 
-class UShaderParameter {
+class UShaderUniformData {
     uint32_t mNameHash;
 
     EParameterType mType;
     uint8_t mIndex;
     uint16_t mBufferIndex;
-    uint16_t mParameterOffset;
-    uint16_t mParameterSize;
+    uint16_t mUniformOffset;
+    uint16_t mUniformSize;
 
-    float mData[4] { 0.0f, 0.0f, 0.0f, 0.0f };
+    float mData[64] {};
 
     std::string mName;
 
 public:
-    UShaderParameter();
-    virtual ~UShaderParameter();
+    UShaderUniformData();
+    virtual ~UShaderUniformData();
 
     void Deserialize(bStream::CStream* stream, uint64_t parametersPtr);
     void Serialize(bStream::CStream* stream);
+
+    UShaderUniform* GetShaderUniform();
 };
 
-class UShader {
+class UShaderData {
     uint32_t mNameHash;
     uint32_t mType;
 
-    std::vector<UShaderParameter*> mParameters;
+    std::vector<UShaderUniformData*> mUniforms;
     std::vector<UTextureData*> mTextures;
 
     uint64_t m0018;
@@ -64,18 +68,20 @@ class UShader {
     std::string mName;
 
 public:
-    UShader();
-    virtual ~UShader();
+    UShaderData();
+    virtual ~UShaderData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
+
+    UShader* GetShader();
 };
 
-class UShaderGroup {
+class UShaderContainer {
     uint64_t mVTable;
     uint64_t mTextureDictionaryPtr;
 
-    std::vector<UShader*> mShaders;
+    std::vector<UShaderData*> mShaders;
     uint32_t m001C;
 
     uint64_t m0020;
@@ -87,11 +93,11 @@ class UShaderGroup {
     uint64_t m0038;
 
 public:
-    UShaderGroup();
-    virtual ~UShaderGroup();
+    UShaderContainer();
+    virtual ~UShaderContainer();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 
-    void GetShaders();
+    std::vector<UShader*> GetShaders();
 };

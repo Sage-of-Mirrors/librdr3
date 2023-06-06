@@ -38,7 +38,7 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
     uint64_t shaderGroupPtr = stream->readUInt64() & 0x0FFFFFFF;
     streamPos = stream->tell();
     stream->seek(shaderGroupPtr);
-    //mShaderGroup.Deserialize(stream);
+    mShaderContainer.Deserialize(stream);
 
     stream->seek(streamPos);
 
@@ -144,8 +144,9 @@ void UDrawableData::Serialize(bStream::CStream* stream) {
 
 UDrawable* UDrawableData::GetDrawable() {
     UDrawable* drawable = new UDrawable();
-
     drawable->FileName = mName.data();
+
+    std::vector<UShader*> shaders = mShaderContainer.GetShaders();
 
     for (int i = 0; i < LOD_MAX; i++) {
         if (mLodData[i] == nullptr) {
@@ -155,10 +156,20 @@ UDrawable* UDrawableData::GetDrawable() {
         drawable->Lods[i] = mLodData[i]->GetLod();
         drawable->Lods[i]->LodDistance = mLodDistances[i];
         drawable->Lods[i]->LodFlags = mLodFlags[i];
+
+        for (UModel* m : drawable->Lods[i]->Models) {
+            for (UGeometry* g : m->Geometries) {
+                g->Shader = new UShader(*shaders[g->ShaderIndex]);
+            }
+        }
     }
 
     if (mSkeletonData != nullptr) {
         drawable->Skeleton = mSkeletonData->GetSkeleton();
+    }
+
+    for (int i = 0; i < shaders.size(); i++) {
+        delete shaders[i];
     }
 
     return drawable;

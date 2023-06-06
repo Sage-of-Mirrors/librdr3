@@ -69,8 +69,8 @@ void UModelData::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
 
     uint64_t geometryPtr = stream->readUInt64() & 0x0FFFFFFF;
-    uint16_t GeometryCount = stream->readUInt16();
-    uint16_t GeometryCapacity = stream->readUInt16();
+    uint16_t geometryCount = stream->readUInt16();
+    uint16_t geometryCapacity = stream->readUInt16();
     m0014 = stream->readUInt32();
 
     uint64_t boundingBoxPtr = stream->readUInt64() & 0x0FFFFFFF;
@@ -105,6 +105,14 @@ void UModelData::Deserialize(bStream::CStream* stream) {
     mShaderIndexCount = stream->readUInt16();
     m0038 = stream->readUInt64();
 
+    if (shaderIndicesPtr != 0) {
+        stream->seek(shaderIndicesPtr);
+
+        for (int i = 0; i < mShaderIndexCount; i++) {
+            mShaderIndices.push_back(stream->readUInt16());
+        }
+    }
+
     if (boneTagMapPtr != 0) {
         stream->seek(boneTagMapPtr);
 
@@ -115,7 +123,7 @@ void UModelData::Deserialize(bStream::CStream* stream) {
 
     stream->seek(geometryPtr);
 
-    for (int i = 0; i < GeometryCount; i++) {
+    for (int i = 0; i < geometryCount; i++) {
         uint64_t curGeometryPtr = stream->readUInt64() & 0x0FFFFFFF;
 
         streamPos = stream->tell();
@@ -136,7 +144,8 @@ void UModelData::Serialize(bStream::CStream* stream) {
 UModel* UModelData::GetModel() {
     UModel* model = new UModel();
 
-    for (UGeometryData* geomData : mGeometry) {
+    for (int i = 0; i < mGeometry.size(); i++) {
+        UGeometryData* geomData = mGeometry[i];
         UGeometry* geom = new UGeometry();
 
         geom->Vertices = geomData->GetVertexBuffer()->GetVertices();
@@ -151,6 +160,8 @@ UModel* UModelData::GetModel() {
         geom->BlendWeightsCount = attributeCounts[5];
         geom->ColorsCount = attributeCounts[6];
         geom->TexCoordsCount = attributeCounts[7];
+
+        geom->ShaderIndex = mShaderIndices[i];
 
         model->Geometries.push_back(geom);
     }
