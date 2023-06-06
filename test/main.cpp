@@ -41,8 +41,14 @@ void DumpShaderData() {
             continue;
         }
 
+        std::cout << p.path() << std::endl;
+
         try {
             drawable = ImportYdr(p.path().generic_u8string());
+
+            if (drawable == nullptr) {
+                continue;
+            }
 
             // For each valid LOD...
             for (auto* lod : drawable->Lods) {
@@ -102,6 +108,5 @@ void DumpShaderData() {
         drawable = nullptr;
 
         fileCount++;
-        std::cout << fileCount << std::endl;
     }
 }
