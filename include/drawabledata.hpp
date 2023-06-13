@@ -45,16 +45,20 @@ class UDrawableData {
 
     std::string mName;         // 0xA8
     uint64_t m00B0;         // 0xB0
-    uint64_t mBoundPointer; // 0xB8
+    uint64_t mCollisionPointer; // 0xB8
     uint64_t mSamplers;     // 0xC0
     uint64_t mPadding3;     // 0xC8
+
+    void CalculateBoundingBox(UDrawable* drawable);
+    void CalculateBoundingSphere(UDrawable* drawable);
 
 public:
     UDrawableData();
     virtual ~UDrawableData();
 
     void Deserialize(bStream::CStream* stream);
-    void Serialize(bStream::CStream* stream);
+    void Serialize(bStream::CMemoryStream* stream);
 
     UDrawable* GetDrawable();
+    void SetDrawable(UDrawable* drawable);
 };

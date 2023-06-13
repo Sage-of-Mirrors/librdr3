@@ -73,7 +73,7 @@ public:
     virtual ~ULodData();
 
     void Deserialize(bStream::CStream* stream);
-    void Serialize(bStream::CStream* stream);
+    void Serialize(bStream::CStream* stream, uint8_t lodIndex);
 
     ULod* GetLod();
 

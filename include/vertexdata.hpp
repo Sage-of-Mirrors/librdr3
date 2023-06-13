@@ -88,7 +88,7 @@ struct UVertex {
     std::array<UVector2, 24> TexCoord;
 };
 
-struct UVertexFormat {
+struct UVertexFormatData {
     uint32_t mOffsets[(uint32_t)EVertexAttribute::VAT_MAX];    // 0x0000
     uint8_t mSizes[(uint32_t)EVertexAttribute::VAT_MAX];       // 0x00D0
     EVertexFormat mTypes[(uint32_t)EVertexAttribute::VAT_MAX]; // 0x0104
@@ -97,7 +97,7 @@ struct UVertexFormat {
     uint32_t m013C; // 0x013C
 
     void Deserialize(bStream::CStream* stream);
-    void Serialize(bStream::CStream* stream);
+    void Serialize(bStream::CMemoryStream* stream);
 };
 
 class UVertexBuffer {
@@ -115,18 +115,22 @@ class UVertexBuffer {
     uint64_t m0028;       // 0x28
 
     uint64_t mShaderResourceView; // 0x30
-    UVertexFormat mVertexFormat;  // 0x38
+    UVertexFormatData mVertexFormat;  // 0x38
 
     std::array<float, 4> ReadVertexComponent(bStream::CStream& stream, EVertexFormat format);
+    void WriteVertexComponent(bStream::CStream* stream, EVertexFormat format, std::array<float, 4> data);
+
+    uint16_t CalculateVertexStride(std::vector<UVertex*>& vertices, std::vector<EVertexFormat> formats);
 
 public:
     UVertexBuffer();
     virtual ~UVertexBuffer();
 
     void Deserialize(bStream::CStream* stream);
-    void Serialize(bStream::CStream* stream);
+    void Serialize(bStream::CMemoryStream* stream);
 
     std::vector<UVertex*> GetVertices();
+    void SetVertices(std::vector<UVertex*>& vertices, std::vector<EVertexFormat> formats);
     
     uint32_t GetAttributeCount(uint32_t startingIndex, uint32_t max);
 };

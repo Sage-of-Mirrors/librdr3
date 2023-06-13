@@ -56,6 +56,8 @@ struct UGeometry {
     std::vector<UVertex*> Vertices;
     std::vector<uint32_t> Indices;
 
+    std::vector<EVertexFormat> VertexFormats;
+
     uint32_t PositionsCount = 0;
     uint32_t NormalsCount = 0;
     uint32_t TangentsCount = 0;

@@ -77,8 +77,13 @@ class CStream {
 		virtual void writeInt16(int16_t) = 0;
 		virtual void writeUInt16(uint16_t) = 0;
 
+		virtual void writeInt64(int64_t) = 0;
+		virtual void writeUInt64(uint64_t) = 0;
+
 		virtual void readBytesTo(uint8_t*, size_t) = 0;
 		virtual void writeBytesTo(uint8_t*, size_t) = 0;
+
+		virtual void fill(size_t, uint8_t) = 0;
 
 		virtual void writeString(std::string) = 0;
 		virtual std::string peekString(size_t, size_t) = 0;
@@ -125,9 +130,12 @@ public:
 	void writeUInt16(uint16_t);
 	void writeInt32(int32_t);
 	void writeUInt32(uint32_t);
+	void writeInt64(int64_t);
+	void writeUInt64(uint64_t);
 	void writeFloat(float);
 	void writeBytesTo(uint8_t*, size_t);
 	void writeString(std::string);
+	void fill(size_t, uint8_t);
 
 	//utility functions
 	size_t getSize();
@@ -211,6 +219,9 @@ class CMemoryStream : public CStream {
 		void writeInt32(int32_t);
 		void writeUInt32(uint32_t);
 
+		void writeInt64(int64_t);
+		void writeUInt64(uint64_t);
+
 		void writeFloat(float);
 		void writeBytesTo(uint8_t*, size_t);
 		void writeString(std::string);
@@ -218,6 +229,8 @@ class CMemoryStream : public CStream {
 		std::string readString(size_t);
 		std::string peekString(size_t, size_t);
 		void readBytesTo(uint8_t*, size_t);
+
+		void fill(size_t, uint8_t);
 
 		bool seek(size_t, bool = false);
 		void skip(size_t);
@@ -490,6 +503,22 @@ void CFileStream::writeUInt32(uint32_t v){
 	base.write((char*)&v, sizeof(uint32_t));
 }
 
+void CFileStream::writeInt64(int64_t v) {
+	assert(mode == OpenMode::Out);
+	if (order != systemOrder) {
+		v = swap64(v);
+	}
+	base.write((char*)&v, sizeof(int64_t));
+}
+
+void CFileStream::writeUInt64(uint64_t v) {
+	assert(mode == OpenMode::Out);
+	if (order != systemOrder) {
+		v = swap64(v);
+	}
+	base.write((char*)&v, sizeof(uint64_t));
+}
+
 void CFileStream::writeFloat(float v){
 	assert(mode == OpenMode::Out);
 	char* buff = (char*)&v;
@@ -512,6 +541,13 @@ void CFileStream::writeString(std::string v){
 void CFileStream::writeBytesTo(uint8_t* v, size_t size){
 	assert(mode == OpenMode::Out);
 	base.write(reinterpret_cast<char*>(v), size);
+}
+
+void CFileStream::fill(size_t size, uint8_t value) {
+	assert(mode == OpenMode::Out);
+	for (int i = 0; i < size; i++) {
+		base.write((char*)&value, sizeof(char));
+	}
 }
 
 uint8_t CFileStream::peekUInt8(size_t offset){
@@ -940,8 +976,8 @@ void CMemoryStream::writeInt8(int8_t v){
 
 void CMemoryStream::writeUInt8(uint8_t v){
 	Reserve(mPosition + sizeof(v));
-	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
-	mPosition += sizeof(int8_t);
+	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), &v, sizeof(uint8_t));
+	mPosition += sizeof(uint8_t);
 }
 
 void CMemoryStream::writeInt16(int16_t v){
@@ -984,6 +1020,26 @@ void CMemoryStream::writeUInt32(uint32_t v){
 	mPosition += sizeof(int32_t);
 }
 
+void CMemoryStream::writeInt64(int64_t v) {
+	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap64(v);
+
+	memcpy(OffsetWritePointer<int64_t>(mBuffer, mPosition), &v, sizeof(int64_t));
+	mPosition += sizeof(int64_t);
+}
+
+void CMemoryStream::writeUInt64(uint64_t v) {
+	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap64(v);
+
+	memcpy(OffsetWritePointer<uint64_t>(mBuffer, mPosition), &v, sizeof(int64_t));
+	mPosition += sizeof(int64_t);
+}
+
 void CMemoryStream::writeFloat(float v){
 	Reserve(mPosition + sizeof(v));
 
@@ -994,6 +1050,19 @@ void CMemoryStream::writeFloat(float v){
 	mPosition += sizeof(float);
 }
 
+void CMemoryStream::fill(size_t size, uint8_t value) {
+	Reserve(mPosition + size);
+	
+	uint8_t* buf = new uint8_t[size] { value };
+	//for (int i = 0; i < size; i++) {
+	//	buf[i] = value;
+	//}
+
+	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), buf, size);
+	mPosition += size;
+
+	delete[] buf;
+}
 
 //TODO: Clean these up and test them more
 

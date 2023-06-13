@@ -32,5 +32,18 @@ UDrawableDictionary* ImportYdd(std::string filePath) {
 }
 
 bool ExportYdr(std::string filePath, UDrawable* data) {
+    // Set up drawable data for serialization
+    UDrawableData* d = new UDrawableData();
+    d->SetDrawable(data);
+
+    // Serialize drawable data to memory stream and dispose of it
+    bStream::CMemoryStream drawableData(0xD0, bStream::Little, bStream::Out);
+    d->Serialize(&drawableData);
+    delete d;
+
+    // Write serialized data to file
+    bStream::CFileStream fileStream(filePath, bStream::Out);
+    fileStream.writeBytesTo(drawableData.getBuffer(), drawableData.getSize());
+
     return true;
 }

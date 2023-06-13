@@ -15,13 +15,15 @@ void LoadDrawableDictionary();
 void DumpShaderData();
 
 int main(int argc, char* argv[]) {
-    //LoadDrawable();
+    LoadDrawable();
     //LoadDrawableDictionary();
-    DumpShaderData();
+    //DumpShaderData();
 }
 
 void LoadDrawable() {
-    UDrawable* drw = ImportYdr("D:\\RedDead\\s_van_menuclipboard01.ydr");
+    UDrawable* drw = ImportYdr("D:\\RedDead\\miy_fort.ydr");
+    ExportYdr("D:\\RedDead\\ydr_export_test.ydr", drw);
+
     delete drw;
 }
 

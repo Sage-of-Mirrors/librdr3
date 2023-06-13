@@ -238,7 +238,7 @@ void ULodData::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void ULodData::Serialize(bStream::CStream* stream) {
+void ULodData::Serialize(bStream::CStream* stream, uint8_t lodIndex) {
 
 }
 
