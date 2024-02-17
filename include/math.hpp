@@ -30,6 +30,14 @@ struct UVector3 {
         return prod;
     }
 
+    UVector3 operator *(const UVector3& other) const {
+        UVector3 prod = {
+            x * other.x, y * other.y, z * other.z
+        };
+
+        return prod;
+    }
+
     UVector3 operator /(float scale) {
         if (scale == 0.0f) {
             scale = 0.00001f;

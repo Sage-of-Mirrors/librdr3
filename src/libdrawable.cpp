@@ -7,6 +7,9 @@
 #include "drawabledictionary.hpp"
 #include "drawabledictionarydata.hpp"
 
+#include "ynv/navmesh.hpp"
+#include "ynv/navmeshdata.hpp"
+
 UDrawable* ImportYdr(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
@@ -29,6 +32,25 @@ UDrawableDictionary* ImportYdd(std::string filePath) {
     data.Deserialize(&stream);
 
     return data.GetDrawableDictionary();
+}
+
+UFragment* ImportYft(std::string filePath) {
+    bStream::CFileStream stream(filePath);
+    if (stream.peekUInt32(0) != 0) {
+        return nullptr;
+    }
+}
+
+UNavmesh* ImportYnv(std::string filePath) {
+    bStream::CFileStream stream(filePath);
+    if (stream.peekUInt32(0) != 0) {
+        return nullptr;
+    }
+
+    UNavmeshData data;
+    data.Deserialize(&stream);
+
+    return nullptr;
 }
 
 bool ExportYdr(std::string filePath, UDrawable* data) {
