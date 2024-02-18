@@ -90,12 +90,12 @@ class UNavmeshData {
     uint64_t m0078;         // 0x0078
 
     std::vector<uint16_t> mIndices;  // Attribute offset at 0x0080
-    std::vector<UNavUnk2> mUnk2;     // Attribute offset at 0x0088
+    std::vector<std::vector<UNavUnk2>> mUnk2;     // Attribute offset at 0x0088
 
     uint32_t mTriangleCount;                // 0x0090
     std::vector<uint32_t> mAdjacentMeshIds; // Count at 0x0094, array from 0x0098 to 0x0118
 
-    std::vector<UNavUnk3> mUnk3; // Attribute offset at 0x0118
+    std::vector<std::vector<UNavUnk3>> mUnk3; // Attribute offset at 0x0118
     std::vector<UNavUnk3> mUnk3_2;
 
     UVector4 mBoundsMin;    // Offset at 0x0120

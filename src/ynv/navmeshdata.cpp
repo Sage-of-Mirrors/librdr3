@@ -51,72 +51,108 @@ void UNavmeshData::ReadVertexData(bStream::CStream* stream, UNavAttribute* attri
 }
 
 void UNavmeshData::ReadIndexData(bStream::CStream* stream, UNavAttribute* attribute) {
-    //size_t streamPos = stream->tell();
-    //stream->seek(attribute->mDescriptor.mDataOffset);
+    size_t streamPos = stream->tell();
+    stream->seek(attribute->mDescriptorsOffset);
 
-    //for (uint32_t i = 0; i < attribute->mCount; i++) {
-    //    mIndices.push_back(stream->readUInt16());
-    //}
+    for (uint32_t i = 0; i < attribute->mPoolCount; i++) {
+        uint64_t dataOffset = stream->readUInt64() & 0x0FFFFFFF;
+        uint32_t indexCount = stream->readUInt32();
+        uint32_t unkValue = stream->readUInt32();
 
-    //stream->seek(streamPos);
+        size_t localStreamPos = stream->tell();
+        stream->seek(dataOffset);
+
+        for (uint32_t j = 0; j < indexCount; j++) {
+            mIndices.push_back(stream->readUInt16());
+        }
+
+        stream->seek(localStreamPos);
+    }
+
+    stream->seek(streamPos);
 }
 
 void UNavmeshData::ReadUnk2Data(bStream::CStream* stream, UNavAttribute* attribute) {
-    //size_t streamPos = stream->tell();
-    //stream->seek(attribute->mDescriptor.mDataOffset);
+    size_t streamPos = stream->tell();
+    stream->seek(attribute->mDescriptorsOffset);
 
-    //for (uint32_t i = 0; i < attribute->mCount; i++) {
-    //    UNavUnk2 unk2;
-    //    unk2.m0000 = stream->readUInt32();
-    //    unk2.m0004 = stream->readUInt32();
+    for (uint32_t i = 0; i < attribute->mPoolCount; i++) {
+        uint64_t dataOffset = stream->readUInt64() & 0x0FFFFFFF;
+        uint32_t unk2Count = stream->readUInt32();
+        uint32_t unkValue = stream->readUInt32();
 
-    //    mUnk2.push_back(unk2);
-    //}
+        size_t localStreamPos = stream->tell();
+        stream->seek(dataOffset);
 
-    //stream->seek(streamPos);
+        std::vector<UNavUnk2> localUnk2s;
+        for (uint32_t j = 0; j < unk2Count; j++) {
+            UNavUnk2 unk2;
+            unk2.m0000 = stream->readUInt32();
+            unk2.m0004 = stream->readUInt32();
+
+            localUnk2s.push_back(unk2);
+        }
+
+        mUnk2.push_back(localUnk2s);
+        stream->seek(localStreamPos);
+    }
+
+    stream->seek(streamPos);
 }
 
 void UNavmeshData::ReadUnk3Data(bStream::CStream* stream, UNavAttribute* attribute) {
-    //size_t streamPos = stream->tell();
-    //stream->seek(attribute->mDescriptor.mDataOffset);
+    size_t streamPos = stream->tell();
+    stream->seek(attribute->mDescriptorsOffset);
 
-    //for (uint32_t i = 0; i < attribute->mCount; i++) {
-    //    UNavUnk3 unk3;
+    for (uint32_t i = 0; i < attribute->mPoolCount; i++) {
+        uint64_t dataOffset = stream->readUInt64() & 0x0FFFFFFF;
+        uint32_t unk3Count = stream->readUInt32();
+        uint32_t unkValue = stream->readUInt32();
 
-    //    unk3.m0000 = stream->readUInt16();
-    //    unk3.m0002 = stream->readUInt16();
-    //    unk3.m0004 = stream->readUInt32();
+        size_t localStreamPos = stream->tell();
+        stream->seek(dataOffset);
+        
+        std::vector<UNavUnk3> localUnk3s;
+        for (uint32_t j = 0; j < unk3Count; j++) {
+            UNavUnk3 unk3;
 
-    //    unk3.m0008 = stream->readUInt64();
-    //    unk3.m0010 = stream->readUInt64();
+            unk3.m0000 = stream->readUInt16();
+            unk3.m0002 = stream->readUInt16();
+            unk3.m0004 = stream->readUInt32();
 
-    //    int16_t f = stream->readInt16();
-    //    unk3.mBoundsMin.x = f * 0.25f;
-    //    unk3.mBoundsMin.y = stream->readInt16() * 0.25f;
-    //    unk3.mBoundsMin.z = stream->readInt16() * 0.25f;
-    //    unk3.mBoundsMax.x = stream->readInt16() * 0.25f;
-    //    unk3.mBoundsMax.y = stream->readInt16() * 0.25f;
-    //    unk3.mBoundsMax.z = stream->readInt16() * 0.25f;
+            unk3.m0008 = stream->readUInt64();
+            unk3.m0010 = stream->readUInt64();
 
-    //    unk3.m0024 = stream->readUInt16();
-    //    unk3.m0026 = stream->readUInt16();
-    //    unk3.m0028 = stream->readUInt16();
-    //    unk3.m002A = stream->readUInt16();
-    //    unk3.m002C = stream->readUInt16();
+            unk3.mBoundsMin.x = stream->readInt16() * 0.25f;
+            unk3.mBoundsMin.y = stream->readInt16() * 0.25f;
+            unk3.mBoundsMin.z = stream->readInt16() * 0.25f;
+            unk3.mBoundsMax.x = stream->readInt16() * 0.25f;
+            unk3.mBoundsMax.y = stream->readInt16() * 0.25f;
+            unk3.mBoundsMax.z = stream->readInt16() * 0.25f;
 
-    //    unk3.m002E = stream->readUInt8();
-    //    unk3.m002F = stream->readUInt8();
+            unk3.m0024 = stream->readUInt16();
+            unk3.m0026 = stream->readUInt16();
+            unk3.m0028 = stream->readUInt16();
+            unk3.m002A = stream->readUInt16();
+            unk3.m002C = stream->readUInt16();
 
-    //    unk3.m0030 = stream->readUInt16();
+            unk3.m002E = stream->readUInt8();
+            unk3.m002F = stream->readUInt8();
 
-    //    unk3.m0032 = stream->readUInt16();
-    //    unk3.m0034 = stream->readUInt16();
-    //    unk3.m0036 = stream->readUInt16();
+            unk3.m0030 = stream->readUInt16();
 
-    //    mUnk3.push_back(unk3);
-    //}
+            unk3.m0032 = stream->readUInt16();
+            unk3.m0034 = stream->readUInt16();
+            unk3.m0036 = stream->readUInt16();
 
-    //stream->seek(streamPos);
+            localUnk3s.push_back(unk3);
+        }
+
+        mUnk3.push_back(localUnk3s);
+        stream->seek(localStreamPos);
+    }
+
+    stream->seek(streamPos);
 }
 
 void UNavmeshData::ReadUnk4Data(bStream::CStream* stream, uint64_t offset, uint32_t count) {
@@ -176,51 +212,46 @@ void UNavmeshData::Debug_DumpToObj(std::string objFile) {
         }
     }
 
-    //stream << "\n";
+    stream << "\n";
 
-    //for (int i = 0; i < mIndices.size(); i += 3) {
-    //    stream << "f " << mIndices[i] + 1 << " " << mIndices[i + 1] + 1 << " " << mIndices[i + 2] + 1 << "\n";
-    //}
-
-    //for (const UNavUnk3& n : mUnk3) {
-    //    stream << "o grp_" << n.m0004 << "\n";
-
-    //    for (int i = 0; i < n.m0002 >> 5; i++) {
-    //        stream << "l " << mIndices[n.m0004 + i] + 1 << " " << mIndices[n.m0004 + i + 1] + 1 << "\n";
-
-    //        if (i + 2 >= (n.m0002 >> 5)) {
-    //            break;
-    //        }
+    //for (int j = 0; j < mIndices.size(); j++) {
+    //    stream << "o indices_" << j << "\n";
+    //    for (int i = 0; i < mIndices[j].size(); i += 3) {
+    //        stream << "f " << mIndices[j][i] + 1 << " " << mIndices[j][i + 1] + 1 << " " << mIndices[j][i + 2] + 1 << "\n";
     //    }
     //}
 
-    //for (const UNavUnk3& n : mUnk3) {
-    //    stream << "o unk3_" << n.m0004 << "\n";
+    for (int i = 0; i < mUnk3.size(); i++) {
+        for (const UNavUnk3& n : mUnk3[i]) {
+            //stream << "o grp_" << n.m0004 << "\n";
+            stream << "f ";
 
-    //    stream << "v " << n.mBoundsMin.x << " " << n.mBoundsMin.y << " " << n.mBoundsMin.z << "\n";
-    //    stream << "v " << n.mBoundsMax.x << " " << n.mBoundsMax.y << " " << n.mBoundsMax.z << "\n";
-
-    //    stream << "v " << n.mBoundsMax.x << " " << n.mBoundsMin.y << " " << n.mBoundsMin.z << "\n";
-    //    stream << "v " << n.mBoundsMax.x << " " << n.mBoundsMin.y << " " << n.mBoundsMax.z << "\n";
-
-    //    stream << "v " << n.mBoundsMax.x << " " << n.mBoundsMax.y << " " << n.mBoundsMin.z << "\n";
-    //    stream << "v " << n.mBoundsMin.x << " " << n.mBoundsMin.y << " " << n.mBoundsMax.z << "\n";
-
-    //    stream << "v " << n.mBoundsMin.x << " " << n.mBoundsMax.y << " " << n.mBoundsMin.z << "\n";
-    //    stream << "v " << n.mBoundsMin.x << " " << n.mBoundsMax.y << " " << n.mBoundsMax.z << "\n";
+            int cnt = n.m0002 >> 5;
+            for (int j = 0; j < cnt; j++) {
+                stream << mIndices[n.m0004 + j] + 1 << " ";
+            }
+            stream << "\n";
+        }
+    }
+    
+    //for (int i = 0; i < mUnk3.size(); i++) {
+    //    for (const UNavUnk3& n : mUnk3[i]) {
+    //        stream << "v " << n.mBoundsMin.x << " " << n.mBoundsMin.y << " " << n.mBoundsMin.z << "\n";
+    //        stream << "v " << n.mBoundsMax.x << " " << n.mBoundsMax.y << " " << n.mBoundsMax.z << "\n";
+    //    }
     //}
 
-    stream << "v " << mBoundsMin.x << " " << mBoundsMin.y << " " << mBoundsMin.z << "\n";
-    stream << "v " << mBoundsMax.x << " " << mBoundsMax.y << " " << mBoundsMax.z << "\n";
+    //stream << "v " << mBoundsMin.x << " " << mBoundsMin.y << " " << mBoundsMin.z << "\n";
+    //stream << "v " << mBoundsMax.x << " " << mBoundsMax.y << " " << mBoundsMax.z << "\n";
 
-    stream << "v " << mBoundsMax.x << " " << mBoundsMin.y << " " << mBoundsMin.z << "\n";
-    stream << "v " << mBoundsMax.x << " " << mBoundsMin.y << " " << mBoundsMax.z << "\n";
+    //stream << "v " << mBoundsMax.x << " " << mBoundsMin.y << " " << mBoundsMin.z << "\n";
+    //stream << "v " << mBoundsMax.x << " " << mBoundsMin.y << " " << mBoundsMax.z << "\n";
 
-    stream << "v " << mBoundsMax.x << " " << mBoundsMax.y << " " << mBoundsMin.z << "\n";
-    stream << "v " << mBoundsMin.x << " " << mBoundsMin.y << " " << mBoundsMax.z << "\n";
+    //stream << "v " << mBoundsMax.x << " " << mBoundsMax.y << " " << mBoundsMin.z << "\n";
+    //stream << "v " << mBoundsMin.x << " " << mBoundsMin.y << " " << mBoundsMax.z << "\n";
 
-    stream << "v " << mBoundsMin.x << " " << mBoundsMax.y << " " << mBoundsMin.z << "\n";
-    stream << "v " << mBoundsMin.x << " " << mBoundsMax.y << " " << mBoundsMax.z << "\n";
+    //stream << "v " << mBoundsMin.x << " " << mBoundsMax.y << " " << mBoundsMin.z << "\n";
+    //stream << "v " << mBoundsMin.x << " " << mBoundsMax.y << " " << mBoundsMax.z << "\n";
 
     bStream::CFileStream objStream(objFile, bStream::Out);
     objStream.writeString(stream.str());
