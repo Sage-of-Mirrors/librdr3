@@ -61,13 +61,21 @@ struct UNavUnk4 {
     uint32_t m001C; // m001C
 };
 
+enum ENavMeshFlags {
+    VertexDataCompressed = 1 << 0,
+    HasSpecialLinks      = 1 << 1,
+    IsDynamic            = 1 << 2,
+    HasWater             = 1 << 3,
+    AddedAsDLC           = 1 << 4,
+    DLCSwappable         = 1 << 5
+};
+
 class UNavmeshData {
     uint64_t mVTable;       // 0x0000
     UBlockMap* mBlockMap;   // 0x0008
 
-    uint32_t m0010;         // 0x0010
-    uint16_t m0014;         // 0x0014
-    uint16_t m0016;         // 0x0016
+    uint32_t mFlags;        // 0x0010
+    uint32_t mFileVersion;  // 0x0014
 
     uint64_t m0018;         // 0x0018
 
@@ -77,28 +85,15 @@ class UNavmeshData {
 
     UVector4 m0060;         // 0x0060
 
-    std::vector<UVector3> mVertices; // Attribute offset at 0x0070
+    std::vector<std::vector<UVector3>> mVertices; // Attribute offset at 0x0070
 
     uint64_t m0078;         // 0x0078
 
     std::vector<uint16_t> mIndices;  // Attribute offset at 0x0080
     std::vector<UNavUnk2> mUnk2;     // Attribute offset at 0x0088
 
-    uint32_t mEdgeCount;    // 0x0090
-    uint32_t m0094;         // 0x0094
-
-    uint16_t m0098;         // 0x0098
-    uint16_t m009A;         // 0x009A
-    uint8_t m009C;          // 0x009C
-    uint8_t m009D;          // 0x009D
-    uint16_t m009E;         // 0x009E
-
-    uint32_t m00A0;         // 0x00A0
-    uint32_t m00A4;         // 0x00A4
-    uint32_t m00A8;         // 0x00A8
-    uint32_t m00AC;         // 0x00AC
-
-    // Unknown data from 0xB0 to 0x118?
+    uint32_t mTriangleCount;                // 0x0090
+    std::vector<uint32_t> mAdjacentMeshIds; // Count at 0x0094, array from 0x0098 to 0x0118
 
     std::vector<UNavUnk3> mUnk3; // Attribute offset at 0x0118
     std::vector<UNavUnk3> mUnk3_2;
@@ -112,23 +107,27 @@ class UNavmeshData {
     uint32_t m0138;         // 0x0138
     uint32_t m013C;         // 0x013C
 
-    uint8_t m0140;          // 0x0140
-    uint8_t m0141;          // 0x0141
+    uint16_t mNavMeshIndex;  // 0x0140
 
-    uint16_t m0142;         // 0x0142
     uint32_t m0144;         // 0x0144
     uint32_t m0148;         // 0x0148
 
     uint32_t mUnk4Count;    // 0x014C
-    uint32_t mUnk5Count;   // 0x0150
+    uint32_t mUnk5Count;    // 0x0150
+
+    uint32_t mSectorX; // Calculated from mNavMeshIndex
+    uint32_t mSectorY; // Calculated from mNavMeshIndex
 
     void ReadVertexData(bStream::CStream* stream, UNavAttribute* attribute);
-    void ReadUnk1Data(bStream::CStream* stream, UNavAttribute* attribute);
+    void ReadIndexData(bStream::CStream* stream, UNavAttribute* attribute);
     void ReadUnk2Data(bStream::CStream* stream, UNavAttribute* attribute);
     void ReadUnk3Data(bStream::CStream* stream, UNavAttribute* attribute);
     
     void ReadUnk4Data(bStream::CStream* stream, uint64_t offset, uint32_t count);
     void ReadUnk5Data(bStream::CStream* stream, uint64_t offset, uint32_t count);
+
+    bool GetFlag(const uint8_t flag) const { return (mFlags & flag) != 0; }
+    void SetFlag(const uint8_t flag) { mFlags |= flag; }
 
     void Debug_DumpToObj(std::string objFile);
 
