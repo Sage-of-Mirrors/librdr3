@@ -15,10 +15,17 @@ struct UNavAdjacentPolyData {
     uint8_t mSectorIndex;
     bool bUnk;
     uint16_t mPolygonIndex;
+    uint8_t mAdjacencyType;
+    float mSpaceAroundVertex;
+    float mSpaceBeyondEdge;
 
     uint8_t mSectorIndex2;
     bool bUnk2;
     uint16_t mPolygonIndex2;
+    bool bAdjacencyDisabled;
+    bool bProvidesCover;
+    bool bHighDrop;
+    bool bExternal;
 };
 
 enum EPolygonFlags {

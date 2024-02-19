@@ -78,27 +78,31 @@ void UNavmeshData::ReadPolyAdjacencyData(bStream::CStream* stream, UNavAttribute
 
     for (uint32_t i = 0; i < attribute->mPoolCount; i++) {
         uint64_t dataOffset = stream->readUInt64() & 0x0FFFFFFF;
-        uint32_t unk2Count = stream->readUInt32();
+        uint32_t adjCount = stream->readUInt32();
         uint32_t unkValue = stream->readUInt32();
 
         size_t localStreamPos = stream->tell();
         stream->seek(dataOffset);
 
-        for (uint32_t j = 0; j < unk2Count; j++) {
+        for (uint32_t j = 0; j < adjCount; j++) {
             UNavAdjacentPolyData adjData;
             uint32_t bitfield1 = stream->readUInt32();
             uint32_t bitfield2 = stream->readUInt32();
 
-            adjData.mSectorIndex      = (bitfield1 & 0x0000000F);
-            adjData.bUnk              = (bitfield1 & 0x00000010) >> 4;
-            adjData.mPolygonIndex     = (bitfield1 & 0x000FFFE0) >> 5;
+            adjData.mSectorIndex       = (bitfield1 & 0x0000000F);
+            adjData.bUnk               = (bitfield1 & 0x00000010) >> 4;
+            adjData.mPolygonIndex      = (bitfield1 & 0x000FFFE0) >> 5;
+            adjData.mAdjacencyType     = (bitfield1 & 0x00300000) >> 20;
+            adjData.mSpaceAroundVertex = ((bitfield1 & 0x07C00000) >> 22) * 0.25f;
+            adjData.mSpaceBeyondEdge   = ((bitfield1 & 0xF8000000) >> 27) * 0.25f;
 
-            adjData.mSectorIndex2  = (bitfield2 & 0x0000000F);
-            adjData.bUnk2          = (bitfield2 & 0x00000010) >> 4;
-            adjData.mPolygonIndex2 = (bitfield2 & 0x000FFFE0) >> 5;
-
-            assert(!adjData.bUnk);
-            assert(!adjData.bUnk2);
+            adjData.mSectorIndex2      = (bitfield2 & 0x0000000F);
+            adjData.bUnk2              = (bitfield2 & 0x00000010) >> 4;
+            adjData.mPolygonIndex2     = (bitfield2 & 0x000FFFE0) >> 5;
+            adjData.bAdjacencyDisabled = (bitfield2 & 0x00100000) >> 20;
+            adjData.bProvidesCover     = (bitfield2 & 0x00200000) >> 21;
+            adjData.bHighDrop          = (bitfield2 & 0x00400000) >> 22;
+            adjData.bExternal          = (bitfield2 & 0x00800000) >> 23;
 
             mAdjPolygons.push_back(adjData);
         }
