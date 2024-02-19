@@ -3,8 +3,6 @@
 
 #include <bstream.h>
 
-#include <sstream>
-
 UNavmeshData::UNavmeshData() {
 
 }
@@ -33,6 +31,8 @@ void UNavmeshData::ReadVertexData(bStream::CStream* stream, UNavAttribute* attri
                 vert.x = float(stream->readUInt16()) / 65536.0f;
                 vert.y = float(stream->readUInt16()) / 65536.0f;
                 vert.z = float(stream->readUInt16()) / 65536.0f;
+
+                vert = vert * mQuadtreeRoot->mExtents + mQuadtreeRoot->mBoundsMin;
             }
             else {
                 vert.x = stream->readFloat();
@@ -72,7 +72,7 @@ void UNavmeshData::ReadIndexData(bStream::CStream* stream, UNavAttribute* attrib
     stream->seek(streamPos);
 }
 
-void UNavmeshData::ReadUnk2Data(bStream::CStream* stream, UNavAttribute* attribute) {
+void UNavmeshData::ReadPolyAdjacencyData(bStream::CStream* stream, UNavAttribute* attribute) {
     size_t streamPos = stream->tell();
     stream->seek(attribute->mDescriptorsOffset);
 
@@ -84,71 +84,83 @@ void UNavmeshData::ReadUnk2Data(bStream::CStream* stream, UNavAttribute* attribu
         size_t localStreamPos = stream->tell();
         stream->seek(dataOffset);
 
-        std::vector<UNavUnk2> localUnk2s;
         for (uint32_t j = 0; j < unk2Count; j++) {
-            UNavUnk2 unk2;
-            unk2.m0000 = stream->readUInt32();
-            unk2.m0004 = stream->readUInt32();
+            UNavAdjacentPolyData adjData;
+            uint32_t bitfield1 = stream->readUInt32();
+            uint32_t bitfield2 = stream->readUInt32();
 
-            localUnk2s.push_back(unk2);
+            adjData.mSectorIndex      = (bitfield1 & 0x0000000F);
+            adjData.bUnk              = (bitfield1 & 0x00000010) >> 4;
+            adjData.mPolygonIndex     = (bitfield1 & 0x000FFFE0) >> 5;
+
+            adjData.mSectorIndex2  = (bitfield2 & 0x0000000F);
+            adjData.bUnk2          = (bitfield2 & 0x00000010) >> 4;
+            adjData.mPolygonIndex2 = (bitfield2 & 0x000FFFE0) >> 5;
+
+            assert(!adjData.bUnk);
+            assert(!adjData.bUnk2);
+
+            mAdjPolygons.push_back(adjData);
         }
 
-        mUnk2.push_back(localUnk2s);
         stream->seek(localStreamPos);
     }
 
     stream->seek(streamPos);
 }
 
-void UNavmeshData::ReadUnk3Data(bStream::CStream* stream, UNavAttribute* attribute) {
+void UNavmeshData::ReadPolygonData(bStream::CStream* stream, UNavAttribute* attribute) {
     size_t streamPos = stream->tell();
     stream->seek(attribute->mDescriptorsOffset);
 
     for (uint32_t i = 0; i < attribute->mPoolCount; i++) {
         uint64_t dataOffset = stream->readUInt64() & 0x0FFFFFFF;
-        uint32_t unk3Count = stream->readUInt32();
+        uint32_t polygonCount = stream->readUInt32();
         uint32_t unkValue = stream->readUInt32();
 
         size_t localStreamPos = stream->tell();
         stream->seek(dataOffset);
         
-        std::vector<UNavUnk3> localUnk3s;
-        for (uint32_t j = 0; j < unk3Count; j++) {
-            UNavUnk3 unk3;
+        for (uint32_t j = 0; j < polygonCount; j++) {
+            UNavPolygon poly;
 
-            unk3.m0000 = stream->readUInt16();
-            unk3.m0002 = stream->readUInt16();
-            unk3.m0004 = stream->readUInt32();
+            poly.mFlags = stream->readUInt16();
 
-            unk3.m0008 = stream->readUInt64();
-            unk3.m0010 = stream->readUInt64();
+            uint16_t bitfield0002 = stream->readUInt16();
+            poly.mVertexCount = (bitfield0002 & 0x01F0) >> 5;
 
-            unk3.mBoundsMin.x = stream->readInt16() * 0.25f;
-            unk3.mBoundsMin.y = stream->readInt16() * 0.25f;
-            unk3.mBoundsMin.z = stream->readInt16() * 0.25f;
-            unk3.mBoundsMax.x = stream->readInt16() * 0.25f;
-            unk3.mBoundsMax.y = stream->readInt16() * 0.25f;
-            unk3.mBoundsMax.z = stream->readInt16() * 0.25f;
+            poly.mFirstVertexIndex = stream->readUInt32();
 
-            unk3.m0024 = stream->readUInt16();
-            unk3.m0026 = stream->readUInt16();
-            unk3.m0028 = stream->readUInt16();
-            unk3.m002A = stream->readUInt16();
-            unk3.m002C = stream->readUInt16();
+            poly.m0008 = stream->readUInt64();
+            poly.m0010 = stream->readUInt64();
 
-            unk3.m002E = stream->readUInt8();
-            unk3.m002F = stream->readUInt8();
+            poly.mBoundsMin.x = stream->readInt16() * 0.25f;
+            poly.mBoundsMax.x = stream->readInt16() * 0.25f;
 
-            unk3.m0030 = stream->readUInt16();
+            poly.mBoundsMin.y = stream->readInt16() * 0.25f;
+            poly.mBoundsMax.y = stream->readInt16() * 0.25f;
 
-            unk3.m0032 = stream->readUInt16();
-            unk3.m0034 = stream->readUInt16();
-            unk3.m0036 = stream->readUInt16();
+            poly.mBoundsMin.z = stream->readInt16() * 0.25f;
+            poly.mBoundsMax.z = stream->readInt16() * 0.25f;
 
-            localUnk3s.push_back(unk3);
+            poly.m0024 = stream->readUInt16();
+            poly.m0026 = stream->readUInt16();
+            poly.m0028 = stream->readUInt16();
+            poly.m002A = stream->readUInt16();
+            poly.m002C = stream->readUInt16();
+
+            poly.m002E = stream->readUInt8();
+            poly.m002F = stream->readUInt8();
+
+            poly.m0030 = stream->readUInt16();
+
+            poly.m0032 = stream->readUInt16();
+            poly.m0034 = stream->readUInt16();
+            poly.m0036 = stream->readUInt16();
+
+            mPolygons.push_back(poly);
         }
 
-        mUnk3.push_back(localUnk3s);
         stream->seek(localStreamPos);
     }
 
@@ -207,51 +219,38 @@ void UNavmeshData::Debug_DumpToObj(std::string objFile) {
     
     for (int i = 0; i < mVertices.size(); i++) {
         for (const UVector3& v : mVertices[i]) {
-            UVector3 f = (v * (mBoundsMax.xyz() - mBoundsMin.xyz())) + mBoundsMin.xyz();
-            stream << "v " << f.x << " " << f.y << " " << f.z << "\n";
+            stream << "v " << v.x << " " << v.y << " " << v.z << "\n";
         }
     }
 
     stream << "\n";
 
-    //for (int j = 0; j < mIndices.size(); j++) {
-    //    stream << "o indices_" << j << "\n";
-    //    for (int i = 0; i < mIndices[j].size(); i += 3) {
-    //        stream << "f " << mIndices[j][i] + 1 << " " << mIndices[j][i + 1] + 1 << " " << mIndices[j][i + 2] + 1 << "\n";
-    //    }
-    //}
+    for (const UNavPolygon& n : mPolygons) {
+        stream << "f ";
 
-    for (int i = 0; i < mUnk3.size(); i++) {
-        for (const UNavUnk3& n : mUnk3[i]) {
-            //stream << "o grp_" << n.m0004 << "\n";
-            stream << "f ";
+        for (int vrtIdx = 0; vrtIdx < n.mVertexCount; vrtIdx++) {
+            stream << mIndices[n.mFirstVertexIndex + vrtIdx] + 1 << " ";
+        }
 
-            int cnt = n.m0002 >> 5;
-            for (int j = 0; j < cnt; j++) {
-                stream << mIndices[n.m0004 + j] + 1 << " ";
-            }
-            stream << "\n";
+        stream << "\n";
+    }
+
+    bStream::CFileStream objStream(objFile, bStream::Out);
+    objStream.writeString(stream.str());
+}
+
+void UNavmeshData::Debug_DumpQuadtreeToObj(std::string objFile) {
+    std::stringstream stream;
+
+    for (int i = 0; i < mVertices.size(); i++) {
+        for (const UVector3& v : mVertices[i]) {
+            stream << "v " << v.x << " " << v.y << " " << v.z << "\n";
         }
     }
-    
-    //for (int i = 0; i < mUnk3.size(); i++) {
-    //    for (const UNavUnk3& n : mUnk3[i]) {
-    //        stream << "v " << n.mBoundsMin.x << " " << n.mBoundsMin.y << " " << n.mBoundsMin.z << "\n";
-    //        stream << "v " << n.mBoundsMax.x << " " << n.mBoundsMax.y << " " << n.mBoundsMax.z << "\n";
-    //    }
-    //}
 
-    //stream << "v " << mBoundsMin.x << " " << mBoundsMin.y << " " << mBoundsMin.z << "\n";
-    //stream << "v " << mBoundsMax.x << " " << mBoundsMax.y << " " << mBoundsMax.z << "\n";
+    stream << "\n";
 
-    //stream << "v " << mBoundsMax.x << " " << mBoundsMin.y << " " << mBoundsMin.z << "\n";
-    //stream << "v " << mBoundsMax.x << " " << mBoundsMin.y << " " << mBoundsMax.z << "\n";
-
-    //stream << "v " << mBoundsMax.x << " " << mBoundsMax.y << " " << mBoundsMin.z << "\n";
-    //stream << "v " << mBoundsMin.x << " " << mBoundsMin.y << " " << mBoundsMax.z << "\n";
-
-    //stream << "v " << mBoundsMin.x << " " << mBoundsMax.y << " " << mBoundsMin.z << "\n";
-    //stream << "v " << mBoundsMin.x << " " << mBoundsMax.y << " " << mBoundsMax.z << "\n";
+    mQuadtreeRoot->Debug_DumpQuadtreeNodeToObj(stream, mPolygons, mIndices);
 
     bStream::CFileStream objStream(objFile, bStream::Out);
     objStream.writeString(stream.str());
@@ -263,7 +262,7 @@ void UNavmeshData::Deserialize(bStream::CStream* stream) {
     }
 
     size_t streamPos = 0;
-    mVTable = stream->readUInt64();
+    mVTablePtr = stream->readUInt64();
 
     // Read blockmap
     uint64_t blockMapPtr = stream->readUInt64() & 0x0FFFFFFF;
@@ -280,28 +279,28 @@ void UNavmeshData::Deserialize(bStream::CStream* stream) {
 
     m0018 = stream->readUInt64();
 
-    mMatrix0020.r0.x = stream->readFloat();
-    mMatrix0020.r0.y = stream->readFloat();
-    mMatrix0020.r0.z = stream->readFloat();
-    mMatrix0020.r0.w = stream->readFloat();
+    mTransformMatrix.r0.x = stream->readFloat();
+    mTransformMatrix.r0.y = stream->readFloat();
+    mTransformMatrix.r0.z = stream->readFloat();
+    mTransformMatrix.r0.w = stream->readFloat();
 
-    mMatrix0020.r1.x = stream->readFloat();
-    mMatrix0020.r1.y = stream->readFloat();
-    mMatrix0020.r1.z = stream->readFloat();
-    mMatrix0020.r1.w = stream->readFloat();
+    mTransformMatrix.r1.x = stream->readFloat();
+    mTransformMatrix.r1.y = stream->readFloat();
+    mTransformMatrix.r1.z = stream->readFloat();
+    mTransformMatrix.r1.w = stream->readFloat();
 
-    mMatrix0020.r2.x = stream->readFloat();
-    mMatrix0020.r2.y = stream->readFloat();
-    mMatrix0020.r2.z = stream->readFloat();
-    mMatrix0020.r2.w = stream->readFloat();
+    mTransformMatrix.r2.x = stream->readFloat();
+    mTransformMatrix.r2.y = stream->readFloat();
+    mTransformMatrix.r2.z = stream->readFloat();
+    mTransformMatrix.r2.w = stream->readFloat();
 
     m0050 = stream->readUInt64();
     m0058 = stream->readUInt64();
 
-    m0060.x = stream->readFloat();
-    m0060.y = stream->readFloat();
-    m0060.z = stream->readFloat();
-    m0060.w = stream->readFloat();
+    mMeshExtents.x = stream->readFloat();
+    mMeshExtents.y = stream->readFloat();
+    mMeshExtents.z = stream->readFloat();
+    mMeshExtents.w = stream->readFloat();
 
     uint64_t vtxAttributeOffset = stream->readUInt64() & 0x0FFFFFFF;
     streamPos = stream->tell();
@@ -326,7 +325,7 @@ void UNavmeshData::Deserialize(bStream::CStream* stream) {
     unk2Attribute.Deserialize(stream);
     stream->seek(streamPos);
 
-    mTriangleCount = stream->readUInt32();
+    mIndexCount = stream->readUInt32();
 
     uint32_t adjacentMeshCount = stream->readUInt32();
     for (int i = 0; i < 32; i++) {
@@ -337,40 +336,31 @@ void UNavmeshData::Deserialize(bStream::CStream* stream) {
         }
     }
 
-    uint64_t unk3AttributeOffset = stream->readUInt64() & 0x0FFFFFFF;
+    uint64_t polygonAttributeOffset = stream->readUInt64() & 0x0FFFFFFF;
     streamPos = stream->tell();
-    stream->seek(unk3AttributeOffset);
-    UNavAttribute unk3Attribute;
-    unk3Attribute.Deserialize(stream);
+    stream->seek(polygonAttributeOffset);
+    UNavAttribute polygonAttribute;
+    polygonAttribute.Deserialize(stream);
     stream->seek(streamPos);
 
-    uint64_t boundsOffset = stream->readUInt64() & 0x0FFFFFFF;
-    if (boundsOffset != 0) {
-        streamPos = stream->tell();
-        stream->seek(boundsOffset);
+    uint64_t quadtreeOffset = stream->readUInt64() & 0x0FFFFFFF;
+    streamPos = stream->tell();
+    stream->seek(quadtreeOffset);
 
-        mBoundsMin.x = stream->readFloat();
-        mBoundsMin.y = stream->readFloat();
-        mBoundsMin.z = stream->readFloat();
-        mBoundsMin.w = stream->readFloat();
+    mQuadtreeRoot = std::make_shared<UNavQuadtreeNode>();
+    mQuadtreeRoot->Deserialize(stream);
 
-        mBoundsMax.x = stream->readFloat();
-        mBoundsMax.y = stream->readFloat();
-        mBoundsMax.z = stream->readFloat();
-        mBoundsMax.w = stream->readFloat();
-
-        stream->seek(streamPos);
-    }
+    stream->seek(streamPos);
 
     uint64_t unk4Offset = stream->readUInt64() & 0x0FFFFFFF;
     uint64_t unk5Offset = stream->readUInt64() & 0x0FFFFFFF;
 
-    m0138 = stream->readUInt32();
-    m013C = stream->readUInt32();
+    mVertexCount = stream->readUInt32();
+    mPolygonCount = stream->readUInt32();
 
-    mNavMeshIndex = stream->readUInt32();
-    mSectorY = (mNavMeshIndex / 215);
-    mSectorX = mNavMeshIndex - (mSectorY * 215);
+    mSectorIndex = stream->readUInt32();
+    mSectorY = (mSectorIndex / 215);
+    mSectorX = mSectorIndex - (mSectorY * 215);
     mSectorY *= 3;
     mSectorX *= 3;
 
@@ -382,19 +372,109 @@ void UNavmeshData::Deserialize(bStream::CStream* stream) {
 
     ReadVertexData(stream, &vtxAttribute);
     ReadIndexData(stream, &indexAttribute);
-    ReadUnk2Data(stream, &unk2Attribute);
-    ReadUnk3Data(stream, &unk3Attribute);
+    ReadPolyAdjacencyData(stream, &unk2Attribute);
+    ReadPolygonData(stream, &polygonAttribute);
 
-    if (unk4Offset != 0) {
+    if (GetFlag(ENavMeshFlags::HasSpecialLinks)) {
         ReadUnk4Data(stream, unk4Offset, mUnk4Count);
-    }
-    if (unk5Offset != 0) {
         ReadUnk5Data(stream, unk5Offset, mUnk5Count);
     }
-
-    Debug_DumpToObj("D:\\RedDead\\Navmesh\\test.obj");
 }
 
 void UNavmeshData::Serialize(bStream::CMemoryStream* stream) {
 
+}
+
+void UNavQuadtreeLeafData::Deserialize(bStream::CStream* stream) {
+    mRuntimePtr = stream->readUInt64() & 0x0FFFFFFF;
+
+    uint64_t polygonIndicesOffset = stream->readUInt64() & 0x0FFFFFFF;
+    uint64_t boundsOffset = stream->readUInt64() & 0x0FFFFFFF;
+
+    uint16_t polygonCount = stream->readUInt16();
+    uint16_t boundsCount = stream->readUInt16();
+
+    stream->seek(polygonIndicesOffset);
+    for (int i = 0; i < polygonCount; i++) {
+        mPolygonIndices.push_back(stream->readUInt16());
+    }
+
+    if (boundsCount != 0) {
+        assert(false);
+    }
+}
+
+void UNavQuadtreeNode::Deserialize(bStream::CStream* stream) {
+    mBoundsMin.x = stream->readFloat();
+    mBoundsMin.y = stream->readFloat();
+    mBoundsMin.z = stream->readFloat();
+    stream->skip(4);
+
+    mBoundsMax.x = stream->readFloat();
+    mBoundsMax.y = stream->readFloat();
+    mBoundsMax.z = stream->readFloat();
+    stream->skip(4);
+
+    mExtents = mBoundsMax - mBoundsMin;
+
+    mAABBMin.x = stream->readInt16() * 0.25f;
+    mAABBMax.x = stream->readInt16() * 0.25f;
+    mAABBMin.y = stream->readInt16() * 0.25f;
+    mAABBMax.y = stream->readInt16() * 0.25f;
+    mAABBMin.z = stream->readInt16() * 0.25f;
+    mAABBMax.z = stream->readInt16() * 0.25f;
+
+    uint64_t leafDataOffset = stream->readUInt64() & 0x0FFFFFFF;
+    size_t streamPos = 0;
+
+    if (leafDataOffset != 0) {
+        mLeafData = std::make_shared<UNavQuadtreeLeafData>();
+
+        stream->seek(leafDataOffset);
+        mLeafData->Deserialize(stream);
+
+        return;
+    }
+
+    for (uint32_t i = 0; i < 4; i++) {
+        uint64_t childNodeOffset = stream->readUInt64() & 0x0FFFFFFF;
+
+        if (childNodeOffset == 0) {
+            continue;
+        }
+
+        streamPos = stream->tell();
+        stream->seek(childNodeOffset);
+
+        mChildren[i] = std::make_shared<UNavQuadtreeNode>();
+        mChildren[i]->Deserialize(stream);
+
+        stream->seek(streamPos);
+    }
+}
+
+void UNavQuadtreeNode::Debug_DumpQuadtreeNodeToObj(std::stringstream& stream, const std::vector<UNavPolygon>& polygons, const std::vector<uint16_t>& vertexIndices) {
+    if (mLeafData == nullptr) {
+        for (uint32_t i = 0; i < 4; i++) {
+            if (mChildren[i] == nullptr) {
+                continue;
+            }
+
+            mChildren[i]->Debug_DumpQuadtreeNodeToObj(stream, polygons, vertexIndices);
+        }
+
+        return;
+    }
+
+    stream << "o node_" << mAABBMax.x << "\n";
+
+    for (uint32_t i = 0; i < mLeafData->mPolygonIndices.size(); i++) {
+        const UNavPolygon& poly = polygons[mLeafData->mPolygonIndices[i]];
+
+        stream << "f ";
+        for (uint32_t j = 0; j < poly.mVertexCount; j++) {
+            stream << vertexIndices[poly.mFirstVertexIndex + j] + 1 << " ";
+        }
+        stream << "\n";
+    }
 }
