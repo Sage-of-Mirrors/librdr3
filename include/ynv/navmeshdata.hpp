@@ -142,7 +142,7 @@ namespace UNavmesh {
         std::shared_ptr<UNavQuadtreeNode> mQuadtreeRoot;         // Offset at 0x0120
 
         std::vector<std::shared_ptr<UNavLink>> mLinks;       // Offset at 0x0128, only present if HasLinks flag is set
-        std::vector<uint16_t> mUnk5;                         // Offset at 0x0130, only present if HasLinks flag is set
+        std::vector<uint16_t> mLinkIndices;                  // Offset at 0x0130, only present if HasLinks flag is set
 
         uint32_t mVertexCount;                               // 0x0138
         uint32_t mPolygonCount;                              // 0x013C
@@ -152,7 +152,7 @@ namespace UNavmesh {
                                                              // 0x0148, called "numChildBounds" but isn't used in RDR3?
 
         uint32_t mLinkCount;                                 // 0x014C
-        uint32_t mUnk5Count;                                 // 0x0150
+        uint32_t mLinkIndexCount;                            // 0x0150
                                                              // 0x0154 is padding?
                                                              // 0x0158 is padding?
                                                              // 0x015C is padding?

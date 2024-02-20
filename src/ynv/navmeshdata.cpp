@@ -162,7 +162,7 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     mQuadtreeRoot->Deserialize(stream);
 
     uint64_t linksOffset = UStreamUtil::DeserializePtr64(stream);
-    uint64_t unk5Offset = UStreamUtil::DeserializePtr64(stream);
+    uint64_t linkIndicesOffset = UStreamUtil::DeserializePtr64(stream);
 
     mVertexCount = stream->readUInt32();
     mPolygonCount = stream->readUInt32();
@@ -173,7 +173,7 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     assert(stream->readUInt32() == 0); // "numChildBounds", but RDR3 only ever has 0 here
 
     mLinkCount = stream->readUInt32();
-    mUnk5Count = stream->readUInt32();
+    mLinkIndexCount = stream->readUInt32();
 
     // Padding
     assert(stream->readUInt32() == 0);
@@ -197,9 +197,9 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
             mLinks.push_back(link);
         }
 
-        stream->seek(unk5Offset);
-        for (uint32_t i = 0; i < mUnk5Count; i++) {
-            mUnk5.push_back(stream->readUInt16());
+        stream->seek(linkIndicesOffset);
+        for (uint32_t i = 0; i < mLinkIndexCount; i++) {
+            mLinkIndices.push_back(stream->readUInt16());
         }
     }
 
