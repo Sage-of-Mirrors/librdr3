@@ -8,8 +8,10 @@ file(GLOB_RECURSE LIBDRAWABLE_SRC
     "include/*.h"
     "src/*.cpp"
     "src/ynv/*.cpp"
+    "src/util/*.cpp"
     "include/*.hpp"
-    "include/ynv/*.hpp")
+    "include/ynv/*.hpp"
+    "include/util/*.hpp")
 
 add_library(libdrawable ${LIBDRAWABLE_SRC})
 

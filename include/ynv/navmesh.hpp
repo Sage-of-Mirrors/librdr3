@@ -3,6 +3,6 @@
 #include "types.h"
 #include "math.hpp"
 
-struct UNavmesh {
-
-};
+//struct UNavmesh {
+//
+//};
