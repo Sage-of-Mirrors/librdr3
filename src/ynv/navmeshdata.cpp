@@ -37,30 +37,47 @@ void UNavmesh::DeserializeAdjPolygonData(bStream::CStream* stream, std::shared_p
 }
 
 void UNavmesh::DeserializePolygon(bStream::CStream* stream, std::shared_ptr<UNavPolygon> poly) {
-    poly->mFlags = stream->readUInt16();
+    uint32_t flags1 = stream->readUInt32();
+    poly->mInfo1.mFlags       = (flags1 & 0x001FFFFF);
+    poly->mInfo1.mVertexCount = (flags1 & 0x01E00000) >> 21;
+    poly->mInfo1.mPointType   = (flags1 & 0xFE000000) >> 25;
 
-    uint16_t bitfield0002 = stream->readUInt16();
-    poly->mVertexCount = (bitfield0002 & 0x01F0) >> 5;
-    poly->mFirstVertexIndex = stream->readUInt32();
+    uint32_t flags2 = stream->readUInt32();
+    poly->mInfo2.mFirstVertexIndex = (flags2 & 0x0000FFFF);
+    poly->mInfo2.mNavMeshIndex     = (flags2 & 0x7FFF0000) >> 16;
 
-    poly->m0008 = stream->readUInt64();
-    poly->m0010 = stream->readUInt64();
+    // Runtime fields that we don't care about
+    assert(stream->readUInt64() == 0);
+    assert(stream->readUInt64() == 0);
 
     poly->mBoundsMin.x = stream->readInt16() * 0.25f;
     poly->mBoundsMax.x = stream->readInt16() * 0.25f;
-
     poly->mBoundsMin.y = stream->readInt16() * 0.25f;
     poly->mBoundsMax.y = stream->readInt16() * 0.25f;
-
     poly->mBoundsMin.z = stream->readInt16() * 0.25f;
     poly->mBoundsMax.z = stream->readInt16() * 0.25f;
 
-    poly->m0024 = stream->readUInt16();
-    poly->m0026 = stream->readUInt16();
-    poly->m0028 = stream->readUInt16();
-    poly->m002A = stream->readUInt16();
-    poly->m002C = stream->readUInt16();
+    uint32_t flags3 = stream->readUInt32();
+    poly->mInfo3.mAudioProperties       = (flags3 & 0x00000008);
+    poly->mInfo3.bDebug                 = (flags3 & 0x00000010) >> 4;
+    poly->mInfo3.bNearVehicle           = (flags3 & 0x00000020) >> 5;
+    poly->mInfo3.bInterior              = (flags3 & 0x00000040) >> 6;
+    poly->mInfo3.bIsolated              = (flags3 & 0x00000080) >> 7;
+    poly->mInfo3.bZeroStitchDLC         = (flags3 & 0x00000100) >> 8;
+    poly->mInfo3.bNetworkSpawnCandidate = (flags3 & 0x00000200) >> 9;
+    poly->mInfo3.bIsRoad                = (flags3 & 0x00000400) >> 10;
+    poly->mInfo3.bOnEdgeOfMesh          = (flags3 & 0x00000800) >> 11;
+    poly->mInfo3.bIsTrainTrack          = (flags3 & 0x00001000) >> 12;
+    poly->mInfo3.bIsShallowWater        = (flags3 & 0x00002000) >> 13;
+    poly->mInfo3.mPedDensity            = (flags3 & 0x0001C000) >> 15;
 
+    poly->mCentroidX = float(stream->readUInt8()) / 256.0f;
+    poly->mCentroidY = float(stream->readUInt8()) / 256.0f;
+
+    poly->m002A = stream->readUInt8();
+    poly->m002B = stream->readUInt8();
+    poly->m002C = stream->readUInt8();
+    poly->m002D = stream->readUInt8();
     poly->m002E = stream->readUInt8();
     poly->m002F = stream->readUInt8();
 
@@ -234,8 +251,8 @@ void UNavmesh::UNavmeshData::Debug_DumpToObj(std::string objFile) {
     for (uint32_t i = 0; i < mPolygons.GetTotalSize(); i++) {
         stream << "f ";
 
-        for (int vrtIdx = 0; vrtIdx < mPolygons[i]->mVertexCount; vrtIdx++) {
-            stream << *mVertexIndices[mPolygons[i]->mFirstVertexIndex + vrtIdx] + 1 << " ";
+        for (int vrtIdx = 0; vrtIdx < mPolygons[i]->mInfo1.mVertexCount; vrtIdx++) {
+            stream << *mVertexIndices[mPolygons[i]->mInfo2.mFirstVertexIndex + vrtIdx] + 1 << " ";
         }
 
         stream << "\n";

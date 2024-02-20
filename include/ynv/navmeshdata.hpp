@@ -51,24 +51,51 @@ namespace UNavmesh {
         Water = 1 << 7
     };
 
+    struct UNavPolygonInfo1 {
+        uint8_t mFlags;
+        uint8_t mVertexCount;
+        uint8_t mPointType;
+    };
+
+    struct UNavPolygonInfo2 {
+        uint16_t mFirstVertexIndex;
+        uint16_t mNavMeshIndex;
+    };
+
+    struct UNavPolygonInfo3 {
+        uint16_t mAudioProperties;
+        bool bDebug;
+        bool bNearVehicle;
+        bool bInterior;
+        bool bIsolated;
+        bool bZeroStitchDLC;
+        bool bNetworkSpawnCandidate;
+        bool bIsRoad;
+        bool bOnEdgeOfMesh;
+        bool bIsTrainTrack;
+        bool bIsShallowWater;
+        uint8_t mPedDensity;
+    };
+
     // A polygon in the mesh, consisting of vertex/edge indices and other data.
     struct UNavPolygon {
-        uint16_t mFlags;            // 0x00
-        uint16_t mVertexCount;      // 0x02, at mask 0x01F0
-        uint32_t mFirstVertexIndex; // 0x04
+        UNavPolygonInfo1 mInfo1;    // 0x00, bitfield in a u32
+        UNavPolygonInfo2 mInfo2;    // 0x04, bitfield in a u32
+                                    // 0x08, runtime fields not filled in file
+                                    // 0x10, runtime fields not filled in file
 
-        uint64_t m0008;             // 0x08
-        uint64_t m0010;             // 0x10
+        UVector3 mBoundsMin;        // 0x18, interleaved with max
+        UVector3 mBoundsMax;        // 0x1E, interleaved with min
 
-        UVector3 mBoundsMin;        // 0x18
-        UVector3 mBoundsMax;        // 0x1E
+        UNavPolygonInfo3 mInfo3;    // 0x24, bitfield in a u32
 
-        uint16_t m0024;             // 0x24
-        uint16_t m0026;             // 0x26
-        uint16_t m0028;             // 0x28
-        uint16_t m002A;             // 0x2A
-        uint16_t m002C;             // 0x2C
+        float mCentroidX;           // 0x28, stored as a compressed u8
+        float mCentroidY;           // 0x29, stored as a compressed u8
 
+        uint8_t m002A;              // 0x2A
+        uint8_t m002B;              // 0x2B
+        uint8_t m002C;              // 0x2C
+        uint8_t m002D;              // 0x2D
         uint8_t m002E;              // 0x2E
         uint8_t m002F;              // 0x2F
 
