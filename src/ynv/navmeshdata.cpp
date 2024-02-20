@@ -113,6 +113,45 @@ void UNavmesh::DeserializeLink(bStream::CStream* stream, std::shared_ptr<UNavLin
     link->m001C = stream->readUInt32();
 }
 
+void UNavmesh::SerializeVertex(bStream::CStream* stream, std::shared_ptr<UVector3> vector) {
+    stream->writeUInt16(uint16_t(vector->x * 65536.0f));
+    stream->writeUInt16(uint16_t(vector->y * 65536.0f));
+    stream->writeUInt16(uint16_t(vector->z * 65536.0f));
+}
+
+void UNavmesh::SerializeVertexIndex(bStream::CStream* stream, std::shared_ptr<uint16_t> index) {
+    stream->writeUInt16(*index);
+}
+
+void UNavmesh::SerializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr<UNavAdjacentPolyData> data) {
+    uint32_t bitfield1 = 0;
+    uint32_t bitfield2 = 0;
+
+    bitfield1 |= (data->mSectorIndex & 0x0000000F);
+    bitfield1 |= (data->bUnk & 0x00000001) << 4;
+    bitfield1 |= (data->mPolygonIndex & 0x00007FFF) << 5;
+    bitfield1 |= (data->mAdjacencyType & 0x00000003) << 20;
+    bitfield1 |= (int16_t(data->mSpaceAroundVertex / 0.25f) & 0x0000001F) << 22;
+    bitfield1 |= (int16_t(data->mSpaceBeyondEdge / 0.25f) & 0x0000001F) << 27;
+
+    stream->writeUInt32(bitfield1);
+    stream->writeUInt32(bitfield2);
+}
+
+void UNavmesh::SerializePolygon(bStream::CStream* stream, std::shared_ptr<UNavPolygon> poly) {
+    // TODO: Serialize polygons
+    for (int i = 0; i < 0x38; i++) {
+        stream->writeUInt8(0);
+    }
+}
+
+void UNavmesh::SerializeLink(bStream::CStream* stream, std::shared_ptr<UNavLink> link) {
+    // TODO: Serialize links
+    for (int i = 0; i < 0x20; i++) {
+        stream->writeUInt8(0);
+    }
+}
+
 /* === UNavmeshData === */
 
 UNavmesh::UNavmeshData::UNavmeshData() : mQuadtreeRoot(std::make_shared<UNavQuadtreeNode>()) {
@@ -151,7 +190,8 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     assert(stream->readUInt64() == 0); // Padding
 
     // Mesh extents
-    UStreamUtil::DeserializeVector4(stream, mMeshExtents);
+    UStreamUtil::DeserializeVector3(stream, mMeshExtents);
+    stream->skip(4);
 
     // Vertices
     mVertices.Deserialize(stream, DeserializeVertex);
@@ -235,8 +275,126 @@ void UNavmesh::UNavmeshData::ProcessData() {
     }
 }
 
-void UNavmesh::UNavmeshData::Serialize(bStream::CMemoryStream* stream) {
+void UNavmesh::UNavmeshData::Serialize(bStream::CStream* stream) {
+    stream->writeUInt64(0); // VTable pointer
+    stream->writeUInt64(0); // Block map pointer, TODO
+    stream->writeUInt32(mFlags);
+    stream->writeUInt32(RDR3_NAVMESH_VERSION);
+    stream->writeUInt64(0); // Padding
 
+    UStreamUtil::SerializeMatrix3x4(stream, mTransformMatrix);
+    UStreamUtil::PadStream(stream, 32);
+
+    UStreamUtil::SerializeVector3(stream, mMeshExtents);
+    UStreamUtil::PadStream(stream, 16);
+
+    stream->writeUInt64(0); // Placeholder for vertex array pointer
+    stream->writeUInt64(0); // Placeholder for unused uncompressed vertex array pointer
+    stream->writeUInt64(0); // Placeholder for vertex index array pointer
+    stream->writeUInt64(0); // Placeholder for adjacency array pointer
+
+    stream->writeUInt32(mVertexIndices.GetTotalSize());
+    stream->writeUInt32(0); // Placeholder for adjacent mesh count
+
+    uint32_t adjacentMeshCount = 0;
+    for (uint32_t i = 0; i < ADJACENT_NAVMESHES_MAX; i++) {
+        stream->writeUInt32(mAdjacentMeshIds[i]);
+
+        if (mAdjacentMeshIds[i] != 0) {
+            adjacentMeshCount++;
+        }
+    }
+
+    size_t curPos = stream->tell();
+
+    stream->seek(0x94);
+    stream->writeUInt32(adjacentMeshCount);
+    stream->seek(curPos);
+
+    stream->writeUInt64(0); // Placeholder for polygon array pointer
+    stream->writeUInt64(0); // Placeholder for quadtree pointer
+
+    stream->writeUInt64(0); // Placeholder for links pointer
+    stream->writeUInt64(0); // Placeholder for links index pointer
+
+    stream->writeUInt32(mVertices.GetTotalSize());
+    stream->writeUInt32(mPolygons.GetTotalSize());
+    stream->writeUInt32(mSectorIndex);
+
+    stream->writeUInt32(0); // Placeholder for total data size
+    stream->writeUInt32(0); // Unused size value
+
+    stream->writeUInt32(uint32_t(mLinks.size()));
+    stream->writeUInt32(uint32_t(mLinkIndices.size()));
+
+    stream->writeUInt32(0); // Padding
+    stream->writeUInt32(0); // Padding
+    stream->writeUInt32(0); // Padding
+
+    stream->writeUInt32(0); // Placeholder for build id... can we calculate this?
+
+    UStreamUtil::PadStream(stream, 16);
+    uint32_t totalDataWritten = 0;
+    
+    if (mLinks.size() > 0) {
+        // Write links
+        curPos = stream->tell();
+
+        stream->seek(0x128);
+        UStreamUtil::SerializePtr64(stream, uint64_t(curPos));
+        stream->seek(curPos);
+
+        for (size_t i = 0; i < mLinks.size(); i++) {
+            SerializeLink(stream, mLinks[i]);
+        }
+
+        UStreamUtil::PadStream(stream, 16);
+        totalDataWritten += uint32_t(stream->tell() - curPos);
+
+        // Write link indices
+        curPos = stream->tell();
+
+        stream->seek(0x0130);
+        UStreamUtil::SerializePtr64(stream, uint64_t(curPos));
+        stream->seek(curPos);
+
+        for (size_t i = 0; i < mLinkIndices.size(); i++) {
+            stream->writeUInt16(mLinkIndices[i]);
+        }
+
+        UStreamUtil::PadStream(stream, 16);
+        totalDataWritten += uint32_t(stream->tell() - curPos);
+    }
+
+    totalDataWritten += mAdjPolygons.SerializeData(stream, SerializeAdjPolygonData);
+    totalDataWritten += mPolygons.SerializeData(stream, SerializePolygon);
+
+    // TODO: serialize quadtree here and update totalDataWritten
+
+    totalDataWritten += mVertexIndices.SerializeData(stream, SerializeVertexIndex);
+    totalDataWritten += mVertices.SerializeData(stream, SerializeVertex);
+
+    uint64_t adjPolyOffset = mAdjPolygons.SerializeMetadata(stream,      0x40828888);
+    uint64_t polyArrayOffset = mPolygons.SerializeMetadata(stream,       0x40828898);
+    uint64_t indexArrayOffset = mVertexIndices.SerializeMetadata(stream, 0x40828868);
+    uint64_t vertexArrayOffset = mVertices.SerializeMetadata(stream,     0x40828878);
+
+    UStreamUtil::PadStream(stream, 16);
+
+    stream->seek(0x0070);
+    UStreamUtil::SerializePtr64(stream, vertexArrayOffset);
+    
+    stream->seek(0x0080);
+    UStreamUtil::SerializePtr64(stream, indexArrayOffset);
+
+    stream->seek(0x0088);
+    UStreamUtil::SerializePtr64(stream, adjPolyOffset);
+
+    stream->seek(0x0118);
+    UStreamUtil::SerializePtr64(stream, polyArrayOffset);
+
+    stream->seek(0x0144);
+    stream->writeUInt32(totalDataWritten);
 }
 
 void UNavmesh::UNavmeshData::Debug_DumpToObj(std::string objFile) {

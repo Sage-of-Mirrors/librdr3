@@ -9,6 +9,9 @@
 #include <memory>
 #include <functional>
 
+constexpr uint64_t SPLIT_ARRAY_HEADER_SIZE = 0x30;
+constexpr uint64_t BUCKET_INFO_SIZE        = 0x08;
+
 namespace UNavmesh {
     // Implementation of Rockstar's split array type.
     // Elements are stored in buckets of an arbitrary size, but the array still acts like it's contiguous.
@@ -20,8 +23,17 @@ namespace UNavmesh {
         uint32_t mTotalSize;
         bucket mBuckets;
 
+        // These members are used to store data during serialization.
+
+        // Flag to indicate this array has serialized its data. Allows SerializeMetadata() to run.
+        bool bSerializedData;
+        // File offsets of each bucket's data.
+        std::vector<uint32_t> mDataOffsets;
+        // Starting indices of each bucket's data in the global list.
+        std::vector<uint32_t> mBucketIndices;
+
     public:
-        USplitArray() : mTotalSize(0) { mBuckets.push_back(shared_vector()); }
+        USplitArray() : mTotalSize(0), bSerializedData(false) { mBuckets.push_back(shared_vector()); }
         ~USplitArray() { }
 
         uint32_t GetBucketCount() const { return mBuckets.size(); }
@@ -92,6 +104,69 @@ namespace UNavmesh {
             }
 
             stream->seek(returnPos);
+        }
+
+        uint32_t SerializeData(bStream::CStream* stream, std::function<void(bStream::CStream*, std::shared_ptr<T>)> elementSerializeFunc) {
+            stream->seek(0, true);
+
+            uint32_t index = 0;
+            size_t startPos = stream->tell();
+
+            for (size_t i = 0; i < mBuckets.size(); i++) {
+                mDataOffsets.push_back(uint32_t(stream->tell()));
+                mBucketIndices.push_back(index);
+
+                for (std::shared_ptr<T> elem : mBuckets[i]) {
+                    elementSerializeFunc(stream, elem);
+                }
+
+                index += uint32_t(mBuckets[i].size());
+            }
+
+            UStreamUtil::PadStream(stream, 16);
+
+            bSerializedData = true;
+            return uint32_t(stream->tell() - startPos);
+        }
+
+        uint64_t SerializeMetadata(bStream::CStream* stream, uint32_t id) {
+            if (!bSerializedData) {
+                return 0;
+            }
+
+            uint64_t startPos = uint64_t(stream->tell());
+            uint64_t bucketInfoOffset = startPos + SPLIT_ARRAY_HEADER_SIZE;
+            uint64_t indexInfoOffset = bucketInfoOffset + (BUCKET_INFO_SIZE * mBuckets.size());
+
+            stream->writeUInt32(id);                               // Unknown value
+            stream->writeUInt32(1);                                // Unknown value, always 1?
+            stream->writeUInt32(mTotalSize);                       // Total number of elements in the array
+            stream->writeUInt32(0);                                // Unknown value, might just be the upper half of the total element count?
+            UStreamUtil::SerializePtr64(stream, bucketInfoOffset); // Bucket info pointer
+            UStreamUtil::SerializePtr64(stream, indexInfoOffset);  // Index info pointer
+            stream->writeUInt32(uint32_t(mBuckets.size()));        // Number of buckets
+
+            stream->writeUInt32(0);                                // Padding
+            stream->writeUInt32(0);                                // Padding
+            stream->writeUInt32(0);                                // Padding
+
+            // Write bucket info
+            for (size_t i = 0; i < mBuckets.size(); i++) {
+                UStreamUtil::SerializePtr64(stream, mDataOffsets[i]); // Offset to the bucket's data
+
+                stream->writeUInt32(uint32_t(mBuckets[i].size()));    // Number of elements in this bucket
+                stream->writeUInt32(0);                               // Unknown value, might just be the upper half of element count?
+            }
+
+            // Write bucket indices
+            for (size_t i = 0; i < mBuckets.size(); i++) {
+                stream->writeUInt32(mBucketIndices[i]);
+            }
+
+            UStreamUtil::PadStream(stream, 16);
+            bSerializedData = false;
+
+            return startPos;
         }
     };
 }

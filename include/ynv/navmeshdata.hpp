@@ -132,6 +132,12 @@ namespace UNavmesh {
     void DeserializePolygon(bStream::CStream* stream, std::shared_ptr<UNavPolygon> poly);
     void DeserializeLink(bStream::CStream* stream, std::shared_ptr<UNavLink> link);
 
+    void SerializeVertex(bStream::CStream* stream, std::shared_ptr<UVector3> vector);
+    void SerializeVertexIndex(bStream::CStream* stream, std::shared_ptr<uint16_t> index);
+    void SerializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr<UNavAdjacentPolyData> data);
+    void SerializePolygon(bStream::CStream* stream, std::shared_ptr<UNavPolygon> poly);
+    void SerializeLink(bStream::CStream* stream, std::shared_ptr<UNavLink> link);
+
     enum ENavMeshFlags {
         VertexDataCompressed = 1 << 0,
         HasLinks = 1 << 1,
@@ -154,7 +160,7 @@ namespace UNavmesh {
                                                              // 0x0050 is padding for transform matrix
                                                              // 0x0058 is padding for transform matrix
 
-        UVector4 mMeshExtents;                               // 0x0060
+        UVector3 mMeshExtents;                               // 0x0060
 
         USplitArray<UVector3, VERTEX_BUCKET_SIZE> mVertices; // Offset at 0x0070
                                                              // 0x0078 is the offset for uncompressed vertices, but it's never used - all vertices are compressed
@@ -202,7 +208,7 @@ namespace UNavmesh {
         virtual ~UNavmeshData();
 
         void Deserialize(bStream::CStream* stream);
-        void Serialize(bStream::CMemoryStream* stream);
+        void Serialize(bStream::CStream* stream);
 
         void Debug_DumpToObj(std::string objFile);
         //void Debug_DumpQuadtreeToObj(std::string objFile);
