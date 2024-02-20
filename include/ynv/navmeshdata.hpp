@@ -153,14 +153,14 @@ namespace UNavmesh {
 
         uint32_t mLinkCount;                                 // 0x014C
         uint32_t mLinkIndexCount;                            // 0x0150
-                                                             // 0x0154 is padding?
-                                                             // 0x0158 is padding?
-                                                             // 0x015C is padding?
+                                                             // 0x0154 is padding
+                                                             // 0x0158 is padding
+                                                             // 0x015C is padding
 
-        uint32_t mUnk6;                                      // 0x0160
-                                                             // 0x0164 is padding?
-                                                             // 0x0168 is padding?
-                                                             // 0x016C is padding?
+        uint32_t mBuildId;                                   // 0x0160
+                                                             // 0x0164 is padding
+                                                             // 0x0168 is padding
+                                                             // 0x016C is padding
 
         uint32_t mSectorX;                                   // Calculated from mSectorIndex
         uint32_t mSectorY;                                   // Calculated from mSectorIndex

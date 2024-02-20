@@ -180,7 +180,7 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     assert(stream->readUInt32() == 0);
     assert(stream->readUInt32() == 0);
 
-    mUnk6 = stream->readUInt32();
+    mBuildId = stream->readUInt32();
 
     // Padding
     assert(stream->readUInt32() == 0);
