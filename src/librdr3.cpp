@@ -1,4 +1,4 @@
-#include "libdrawable.hpp"
+#include "librdr3.hpp"
 #include "bstream.h"
 
 #include "drawable.hpp"
@@ -41,16 +41,16 @@ UFragment* ImportYft(std::string filePath) {
     }
 }
 
-UNavmesh* ImportYnv(std::string filePath) {
+UNavmesh::UNavmeshData* ImportYnv(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 
-    UNavmeshData data;
-    data.Deserialize(&stream);
+    UNavmesh::UNavmeshData* data = new UNavmesh::UNavmeshData();
+    data->Deserialize(&stream);
 
-    return nullptr;
+    return data;
 }
 
 bool ExportYdr(std::string filePath, UDrawable* data) {

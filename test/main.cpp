@@ -1,8 +1,9 @@
 #include "bstream.h"
 
-#include <libdrawable.hpp>
+#include <librdr3.hpp>
 #include <drawable.hpp>
 #include <drawabledictionary.hpp>
+#include <ynv/navmeshdata.hpp>
 
 #include <filesystem>
 #include <iostream>
@@ -12,12 +13,16 @@
 
 void LoadDrawable();
 void LoadDrawableDictionary();
+void LoadNavmesh();
 void DumpShaderData();
+void DumpNavmeshes();
 
 int main(int argc, char* argv[]) {
-    LoadDrawable();
+    //LoadDrawable();
     //LoadDrawableDictionary();
+    LoadNavmesh();
     //DumpShaderData();
+    //DumpNavmeshes();
 }
 
 void LoadDrawable() {
@@ -30,6 +35,13 @@ void LoadDrawable() {
 void LoadDrawableDictionary() {
     UDrawableDictionary* dict = ImportYdd("D:\\RedDead\\feet_tr1_001.ydd");
     delete dict;
+}
+
+void LoadNavmesh() {
+    UNavmesh::UNavmeshData* nv = ImportYnv("D:\\RedDead\\Navmesh\\nav_std_train_station_es_navmesh[366][291].ynv");
+    bStream::CFileStream st("D:\\RedDead\\Navmesh\\test.ynv", bStream::Little, bStream::Out);
+    nv->Serialize(&st);
+    delete nv;
 }
 
 void DumpShaderData() {
@@ -108,6 +120,40 @@ void DumpShaderData() {
 
         delete drawable;
         drawable = nullptr;
+
+        fileCount++;
+    }
+}
+
+void DumpNavmeshes() {
+    std::filesystem::path rootDir = "D:\\RedDead\\Navmesh";
+    std::filesystem::path objDir = "D:\\RedDead\\Navmesh\\obj_single";
+    UNavmesh::UNavmeshData* data = nullptr;
+
+    uint64_t fileCount = 0;
+    for (const auto& p : std::filesystem::directory_iterator(rootDir)) {
+        if (std::filesystem::is_directory(p) || p.path().extension() != ".ynv") {
+            continue;
+        }
+
+        std::cout << p.path() << std::endl;
+        try {
+            data = ImportYnv(p.path().generic_u8string());
+
+            if (data == nullptr) {
+                continue;
+            }
+
+            //std::filesystem::path dumpPath = objDir / p.path().stem();
+            //dumpPath.replace_extension(".obj");
+            //data->Debug_DumpToObj(dumpPath.string());
+        }
+        catch (std::exception e) {
+            std::cout << "Failed to properly load YNV " << p.path().filename() << std::endl;
+        }
+
+        delete data;
+        data = nullptr;
 
         fileCount++;
     }
