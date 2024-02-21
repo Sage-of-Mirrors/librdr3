@@ -1,17 +1,24 @@
 #pragma once
 
+#include "ynv/navmeshdata.hpp"
+
 #include <string>
+#include <memory>
 
 struct UDrawable;
 struct UDrawableDictionary;
-namespace UNavmesh {
-    class  UNavmeshData;
-}
+
 struct UFragment;
 
-UDrawable*              ImportYdr(std::string filePath);
-UDrawableDictionary*    ImportYdd(std::string filePath);
-UFragment*              ImportYft(std::string filePath);
-UNavmesh::UNavmeshData* ImportYnv(std::string filePath);
+namespace librdr3 {
+    using UNavmeshShared = std::shared_ptr<UNavmesh::UNavmeshData>;
 
-bool ExportYdr(std::string filePath, UDrawable* data);
+    UDrawable*           ImportYdr(std::string filePath);
+    UDrawableDictionary* ImportYdd(std::string filePath);
+    UFragment*           ImportYft(std::string filePath);
+    UNavmeshShared       ImportYnv(std::string filePath);
+
+    bool ExportYdr(std::string filePath, UDrawable* data);
+    bool ExportYnv(std::string filePath, UNavmeshShared data);
+
+}

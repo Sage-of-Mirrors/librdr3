@@ -7,10 +7,7 @@
 #include "drawabledictionary.hpp"
 #include "drawabledictionarydata.hpp"
 
-#include "ynv/navmesh.hpp"
-#include "ynv/navmeshdata.hpp"
-
-UDrawable* ImportYdr(std::string filePath) {
+UDrawable* librdr3::ImportYdr(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
@@ -22,7 +19,7 @@ UDrawable* ImportYdr(std::string filePath) {
     return data.GetDrawable();
 }
 
-UDrawableDictionary* ImportYdd(std::string filePath) {
+UDrawableDictionary* librdr3::ImportYdd(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
@@ -34,26 +31,26 @@ UDrawableDictionary* ImportYdd(std::string filePath) {
     return data.GetDrawableDictionary();
 }
 
-UFragment* ImportYft(std::string filePath) {
+UFragment* librdr3::ImportYft(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 }
 
-UNavmesh::UNavmeshData* ImportYnv(std::string filePath) {
+std::shared_ptr<UNavmesh::UNavmeshData> librdr3::ImportYnv(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 
-    UNavmesh::UNavmeshData* data = new UNavmesh::UNavmeshData();
+    std::shared_ptr<UNavmesh::UNavmeshData> data = std::make_shared<UNavmesh::UNavmeshData>();
     data->Deserialize(&stream);
 
     return data;
 }
 
-bool ExportYdr(std::string filePath, UDrawable* data) {
+bool librdr3::ExportYdr(std::string filePath, UDrawable* data) {
     // Set up drawable data for serialization
     UDrawableData* d = new UDrawableData();
     d->SetDrawable(data);
@@ -66,6 +63,19 @@ bool ExportYdr(std::string filePath, UDrawable* data) {
     // Write serialized data to file
     bStream::CFileStream fileStream(filePath, bStream::Out);
     fileStream.writeBytesTo(drawableData.getBuffer(), drawableData.getSize());
+
+    return true;
+}
+
+bool librdr3::ExportYnv(std::string filePath, UNavmeshShared data) {
+    try {
+        bStream::CFileStream ynvStream(filePath, bStream::Little, bStream::Out);
+        data->Serialize(&ynvStream);
+    }
+    catch (std::exception e) {
+        std::cout << "Failed to save navmesh to YNV: " << e.what() << "\n";
+        return false;
+    }
 
     return true;
 }
