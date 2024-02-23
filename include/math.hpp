@@ -57,6 +57,27 @@ struct UVector3 {
     float lengthSq() {
         return (x * x) + (y * y) + (z * z);
     }
+
+    UVector3 cross(const UVector3& other) {
+        UVector3 prod;
+        prod.x = (y * other.z) - (z * other.y);
+        prod.y = (z * other.x) - (x * other.z);
+        prod.z = (x * other.y) - (y * other.x);
+
+        return prod;
+    }
+
+    UVector3 normalized() {
+        float len = length();
+
+        return {
+            x / len, y / len, z / len
+        };
+    }
+
+    UVector3 toZUp() {
+        return { x, z, -y };
+    }
 };
 
 struct UVector4 {

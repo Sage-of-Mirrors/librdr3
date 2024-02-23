@@ -210,6 +210,9 @@ namespace UNavmesh {
         void Deserialize(bStream::CStream* stream);
         void Serialize(bStream::CStream* stream);
 
+        void GetVertices(float*& vtxData, uint32_t*& indexData, uint32_t& vtxCount, uint32_t& indexCount);
+        void GetIndicesForPolys(uint32_t*& data, uint32_t& indexCount);
+
         void Debug_DumpToObj(std::string objFile);
         //void Debug_DumpQuadtreeToObj(std::string objFile);
     };

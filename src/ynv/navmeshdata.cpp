@@ -397,6 +397,131 @@ void UNavmesh::UNavmeshData::Serialize(bStream::CStream* stream) {
     stream->writeUInt32(totalDataWritten);
 }
 
+void UNavmesh::UNavmeshData::GetVertices(float*& vtxData, uint32_t*& indexData, uint32_t& vtxCount, uint32_t& indexCount) {
+    uint32_t vtxSize = (sizeof(UVector3) + sizeof(UVector3));
+    std::vector<UVector3> vtxs;
+    std::vector<uint32_t> idxs;
+
+    for (uint32_t polyIdx = 0; polyIdx < mPolygons.GetTotalSize(); polyIdx++) {
+        std::shared_ptr<UNavPolygon> poly = mPolygons[polyIdx];
+        if (poly->mInfo1.mVertexCount < 3) {
+            continue;
+        }
+
+        switch (poly->mInfo1.mVertexCount) {
+            case 1:
+            case 2:
+            {
+                break; // Discard degenerate polys for rendering
+            }
+            case 3:
+            {
+                UVector3 a = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp();
+                UVector3 b = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 1]]).toZUp();
+                UVector3 c = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 2]]).toZUp();
+
+                UVector3 ab = a - b;
+                UVector3 bc = b - c;
+
+                UVector3 polyNormal = ab.cross(bc).normalized();
+                if (polyNormal.y < 0) {
+                    polyNormal = bc.cross(ab).normalized();
+                }
+
+                uint32_t baseIdx = uint32_t(vtxs.size() / 2);
+                idxs.push_back(baseIdx);
+                idxs.push_back(baseIdx + 1);
+                idxs.push_back(baseIdx + 2);
+
+                vtxs.push_back((*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp());
+                vtxs.push_back(polyNormal);
+                vtxs.push_back((*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 1]]).toZUp());
+                vtxs.push_back(polyNormal);
+                vtxs.push_back((*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 2]]).toZUp());
+                vtxs.push_back(polyNormal);
+
+                break;
+            }
+            default:
+            {
+                for (uint32_t vtxIdx = 0; vtxIdx < poly->mInfo1.mVertexCount - 2; vtxIdx++) {
+                    UVector3 a = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp();
+                    UVector3 b = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 1]]).toZUp();
+                    UVector3 c = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 2]]).toZUp();
+
+                    UVector3 ab = a - b;
+                    UVector3 bc = b - c;
+
+                    UVector3 polyNormal = ab.cross(bc).normalized();
+
+                    uint32_t baseIdx = uint32_t(vtxs.size() / 2);
+                    idxs.push_back(baseIdx);
+                    idxs.push_back(baseIdx + 1);
+                    idxs.push_back(baseIdx + 2);
+
+                    vtxs.push_back((*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp());
+                    vtxs.push_back(polyNormal);
+                    vtxs.push_back((*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 1]]).toZUp());
+                    vtxs.push_back(polyNormal);
+                    vtxs.push_back((*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 2]]).toZUp());
+                    vtxs.push_back(polyNormal);
+                }
+
+                break;
+            }
+        }
+    }
+
+    vtxCount = uint32_t(vtxs.size() / 2);
+    vtxData = new float[vtxCount * vtxSize];
+    std::memcpy(vtxData, vtxs.data(), vtxCount * vtxSize);
+
+    indexCount = uint32_t(idxs.size());
+    indexData = new uint32_t[indexCount];
+    std::memcpy(indexData, idxs.data(), indexCount * sizeof(uint32_t));
+}
+
+void UNavmesh::UNavmeshData::GetIndicesForPolys(uint32_t*& data, uint32_t& indexCount) {
+    std::vector<uint32_t> triIndices;
+
+    for (uint32_t polyIdx = 0; polyIdx < mPolygons.GetTotalSize(); polyIdx++) {
+        std::shared_ptr<UNavPolygon> poly = mPolygons[polyIdx];
+
+        switch (poly->mInfo1.mVertexCount) {
+            case 1:
+            case 2:
+            {
+                break; // Discard degenerate polys for rendering
+            }
+            case 3:
+            {
+                indexCount += 3;
+
+                triIndices.push_back(*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]);
+                triIndices.push_back(*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 1]);
+                triIndices.push_back(*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 2]);
+
+                break;
+            }
+            default:
+            {
+                indexCount += (poly->mInfo1.mVertexCount - 2) * 3;
+
+                for (uint32_t vtxIdx = 0; vtxIdx < poly->mInfo1.mVertexCount - 2; vtxIdx++) {
+                    triIndices.push_back(*mVertexIndices[poly->mInfo2.mFirstVertexIndex]);
+                    triIndices.push_back(*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 1]);
+                    triIndices.push_back(*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 2]);
+                }
+
+                break;
+            }
+        }
+    }
+
+    data = new uint32_t[triIndices.size() * sizeof(uint32_t)];
+    std::memcpy(data, triIndices.data(), triIndices.size() * sizeof(uint32_t));
+}
+
 void UNavmesh::UNavmeshData::Debug_DumpToObj(std::string objFile) {
     std::stringstream stream;
 
