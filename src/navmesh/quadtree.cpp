@@ -1,14 +1,13 @@
-#include "ynv/quadtree.hpp"
-#include "ynv/navmeshdata.hpp"
+#include "navmesh/quadtree.hpp"
+#include "navmesh/navmeshdata.hpp"
 #include "util/streamutil.hpp"
+#include "util/bstream.h"
 
-#include <bstream.h>
+void CNavQuadtreeLeafData::Deserialize(bStream::CStream* stream) {
+    mRuntimePtr = StreamUtil::DeserializePtr64(stream);
 
-void UNavmesh::UNavQuadtreeLeafData::Deserialize(bStream::CStream* stream) {
-    mRuntimePtr = UStreamUtil::DeserializePtr64(stream);
-
-    uint64_t polygonIndicesOffset = UStreamUtil::DeserializePtr64(stream);
-    uint64_t boundsOffset = UStreamUtil::DeserializePtr64(stream);
+    uint64_t polygonIndicesOffset = StreamUtil::DeserializePtr64(stream);
+    uint64_t boundsOffset = StreamUtil::DeserializePtr64(stream);
 
     uint16_t polygonCount = stream->readUInt16();
     uint16_t boundsCount = stream->readUInt16();
@@ -23,8 +22,8 @@ void UNavmesh::UNavQuadtreeLeafData::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UNavmesh::UNavQuadtreeNode::Deserialize(bStream::CStream* stream) {
-    uint64_t quadtreeOffset = UStreamUtil::DeserializePtr64(stream);
+void CNavQuadtreeNode::Deserialize(bStream::CStream* stream) {
+    uint64_t quadtreeOffset = StreamUtil::DeserializePtr64(stream);
 
     size_t returnPos = stream->tell();
     stream->seek(quadtreeOffset);
@@ -34,11 +33,11 @@ void UNavmesh::UNavQuadtreeNode::Deserialize(bStream::CStream* stream) {
     stream->seek(returnPos);
 }
 
-void UNavmesh::UNavQuadtreeNode::Deserialize_Recursive(bStream::CStream* stream) {
-    UStreamUtil::DeserializeVector3(stream, mBoundsMin);
+void CNavQuadtreeNode::Deserialize_Recursive(bStream::CStream* stream) {
+    StreamUtil::DeserializeVector3(stream, mBoundsMin);
     stream->skip(4);
 
-    UStreamUtil::DeserializeVector3(stream, mBoundsMax);
+    StreamUtil::DeserializeVector3(stream, mBoundsMax);
     stream->skip(4);
 
     mExtents = mBoundsMax - mBoundsMin;
@@ -50,11 +49,11 @@ void UNavmesh::UNavQuadtreeNode::Deserialize_Recursive(bStream::CStream* stream)
     mAABBMin.z = stream->readInt16() * 0.25f;
     mAABBMax.z = stream->readInt16() * 0.25f;
 
-    uint64_t leafDataOffset = UStreamUtil::DeserializePtr64(stream);
+    uint64_t leafDataOffset = StreamUtil::DeserializePtr64(stream);
     size_t streamPos = 0;
 
     if (leafDataOffset != 0) {
-        mLeafData = std::make_shared<UNavQuadtreeLeafData>();
+        mLeafData = std::make_shared<CNavQuadtreeLeafData>();
 
         stream->seek(leafDataOffset);
         mLeafData->Deserialize(stream);
@@ -63,7 +62,7 @@ void UNavmesh::UNavQuadtreeNode::Deserialize_Recursive(bStream::CStream* stream)
     }
 
     for (uint32_t i = 0; i < 4; i++) {
-        uint64_t childNodeOffset = UStreamUtil::DeserializePtr64(stream);
+        uint64_t childNodeOffset = StreamUtil::DeserializePtr64(stream);
 
         if (childNodeOffset == 0) {
             continue;
@@ -72,7 +71,7 @@ void UNavmesh::UNavQuadtreeNode::Deserialize_Recursive(bStream::CStream* stream)
         streamPos = stream->tell();
         stream->seek(childNodeOffset);
 
-        mChildren[i] = std::make_shared<UNavQuadtreeNode>();
+        mChildren[i] = std::make_shared<CNavQuadtreeNode>();
         mChildren[i]->Deserialize_Recursive(stream);
 
         stream->seek(streamPos);

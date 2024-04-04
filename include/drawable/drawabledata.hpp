@@ -1,38 +1,38 @@
 #pragma once
 
 #include "types.h"
-#include "math.hpp"
-
 #include "shaderdata.hpp"
+#include "util/math.hpp"
 
 #include <string>
+#include <memory>
 
 const uint32_t LOD_MAX = 4;
 
-struct UDrawable;
+struct CDrawable;
 
 /* The LOD levels that drawables can define. */
 enum class EDrawableLod : uint8_t {
-    LOD_HIGH = 0,
-    LOD_MED,
-    LOD_LOW,
-    LOD_VLOW,
+    HIGH = 0,
+    MED,
+    LOW,
+    VLOW,
 
-    LOD_MAX
+    MAX
 };
 
-class UDrawableData {
+class CDrawableData {
     uint64_t mVTable;            // 0x00
 
     class UBlockMap* mBlockMap;        // 0x08
-    UShaderContainer mShaderContainer;  // 0x10
-    class USkeletonData* mSkeletonData;      // 0x18
+    CShaderContainer mShaderContainer;  // 0x10
+    std::shared_ptr<class CSkeletonData> mSkeletonData;      // 0x18
 
-    UVector4 mBoundingSphere; // 0x20, w is radius
-    UVector4 mBoundingBoxMin; // 0x30, w has no meaning
-    UVector4 mBoundingBoxMax; // 0x40, w has no meaning
+    Vector4 mBoundingSphere; // 0x20, w is radius
+    Vector4 mBoundingBoxMin; // 0x30, w has no meaning
+    Vector4 mBoundingBoxMax; // 0x40, w has no meaning
 
-    class ULodData* mLodData[LOD_MAX];   // 0x50, 0x58, 0x60, 0x68
+    std::shared_ptr<class CLodData> mLodData[LOD_MAX];   // 0x50, 0x58, 0x60, 0x68
     float mLodDistances[LOD_MAX];  // 0x70, 0x74, 0x78, 0x7C
     uint32_t mLodFlags[LOD_MAX];   // 0x80, 0x84, 0x88, 0x8C
 
@@ -49,16 +49,16 @@ class UDrawableData {
     uint64_t mSamplers;     // 0xC0
     uint64_t mPadding3;     // 0xC8
 
-    void CalculateBoundingBox(UDrawable* drawable);
-    void CalculateBoundingSphere(UDrawable* drawable);
+    void CalculateBoundingBox(std::shared_ptr<CDrawable> drawable);
+    void CalculateBoundingSphere(std::shared_ptr<CDrawable> drawable);
 
 public:
-    UDrawableData();
-    virtual ~UDrawableData();
+    CDrawableData();
+    virtual ~CDrawableData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CMemoryStream* stream);
 
-    UDrawable* GetDrawable();
-    void SetDrawable(UDrawable* drawable);
+    std::shared_ptr<CDrawable> GetDrawable();
+    void SetDrawable(std::shared_ptr<CDrawable> drawable);
 };

@@ -1,44 +1,43 @@
-#include "shaderdata.hpp"
-#include "bstream.h"
+#include "drawable/shaderdata.hpp"
+#include "drawable/shadernames.hpp"
+#include "drawable/shaderparamnames.hpp"
+#include "drawable/drawable.hpp"
 
-#include "util.hpp"
-#include "shadernames.hpp"
-#include "shaderparamnames.hpp"
-
-#include "drawable.hpp"
+#include "util/bstream.h"
+#include "util/util.hpp"
 
 #include <fstream>
 
-/* UTextureData */
+/* CTextureData */
 
-UTextureData::UTextureData() {
-
-}
-
-UTextureData::~UTextureData() {
+CTextureData::CTextureData() {
 
 }
 
-void UTextureData::Deserialize(bStream::CStream* stream) {
+CTextureData::~CTextureData() {
 
 }
 
-void UTextureData::Serialize(bStream::CStream* stream) {
+void CTextureData::Deserialize(bStream::CStream* stream) {
+
+}
+
+void CTextureData::Serialize(bStream::CStream* stream) {
 
 }
 
 
-/* UShaderParameter */
+/* CShaderParameter */
 
-UShaderUniformData::UShaderUniformData() : mName("") {
-
-}
-
-UShaderUniformData::~UShaderUniformData() {
+CShaderUniformData::CShaderUniformData() : mName("") {
 
 }
 
-void UShaderUniformData::Deserialize(bStream::CStream* stream, uint64_t parametersPtr) {
+CShaderUniformData::~CShaderUniformData() {
+
+}
+
+void CShaderUniformData::Deserialize(bStream::CStream* stream, uint64_t parametersPtr) {
     mNameHash = stream->readUInt32();
     uint32_t packedField = stream->readUInt32();
 
@@ -56,7 +55,7 @@ void UShaderUniformData::Deserialize(bStream::CStream* stream, uint64_t paramete
     mUniformSize /= sizeof(float);
     assert(mUniformSize <= 64);
 
-    if (mType == EParameterType::PRM_PARAMETER) {
+    if (mType == EParameterType::PARAMETER) {
         // Calculate offset for parameter data
 
         uint64_t bufferOffset = mBufferIndex * sizeof(uint64_t);
@@ -89,12 +88,12 @@ void UShaderUniformData::Deserialize(bStream::CStream* stream, uint64_t paramete
     }
 }
 
-void UShaderUniformData::Serialize(bStream::CStream* stream) {
+void CShaderUniformData::Serialize(bStream::CStream* stream) {
 
 }
 
-UShaderUniform* UShaderUniformData::GetShaderUniform() {
-    UShaderUniform* uniform = new UShaderUniform();
+std::shared_ptr<CShaderUniform> CShaderUniformData::GetShaderUniform() {
+    std::shared_ptr<CShaderUniform> uniform = std::make_shared<CShaderUniform>();
 
     uniform->Name = mName.data();
     uniform->Hash = mNameHash;
@@ -107,29 +106,18 @@ UShaderUniform* UShaderUniformData::GetShaderUniform() {
 }
 
 
-/* UShaderData */
+/* CShaderData */
 
-UShaderData::UShaderData() : mName("") {
+CShaderData::CShaderData() : mName("") {
 
 }
 
-UShaderData::~UShaderData() {
-    for (int i = 0; i < mUniforms.size(); i++) {
-        delete mUniforms[i];
-        mUniforms[i] = nullptr;
-    }
-
+CShaderData::~CShaderData() {
     mUniforms.clear();
-
-    for (int i = 0; i < mTextures.size(); i++) {
-        delete mTextures[i];
-        mTextures[i] = nullptr;
-    }
-
     mTextures.clear();
 }
 
-void UShaderData::Deserialize(bStream::CStream* stream) {
+void CShaderData::Deserialize(bStream::CStream* stream) {
     mNameHash = stream->readUInt32();
     mType = stream->readUInt32();
 
@@ -161,7 +149,7 @@ void UShaderData::Deserialize(bStream::CStream* stream) {
     uint32_t numParameters = stream->readUInt32();
 
     for (int i = 0; i < numParameters; i++) {
-        UShaderUniformData* newParam = new UShaderUniformData();
+        std::shared_ptr<CShaderUniformData> newParam = std::make_shared<CShaderUniformData>();
         newParam->Deserialize(stream, parametersPtr);
 
         mUniforms.push_back(newParam);
@@ -183,7 +171,7 @@ void UShaderData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curTexturePtr);
 
-        UTextureData* tex = new UTextureData();
+        std::shared_ptr<CTextureData> tex = std::make_shared<CTextureData>();
         tex->Deserialize(stream);
         mTextures.push_back(tex);
 
@@ -206,17 +194,17 @@ void UShaderData::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UShaderData::Serialize(bStream::CStream* stream) {
+void CShaderData::Serialize(bStream::CStream* stream) {
 
 }
 
-UShader* UShaderData::GetShader() {
-    UShader* shader = new UShader();
+std::shared_ptr<CShader> CShaderData::GetShader() {
+    std::shared_ptr<CShader> shader = std::make_shared<CShader>();
 
     shader->Name = mName.data();
     shader->Hash = mNameHash;
 
-    for (UShaderUniformData* d : mUniforms) {
+    for (std::shared_ptr<CShaderUniformData> d : mUniforms) {
         shader->Uniforms.push_back(d->GetShaderUniform());
     }
 
@@ -224,22 +212,17 @@ UShader* UShaderData::GetShader() {
 }
 
 
-/* UShaderContainer */
+/* CShaderContainer */
 
-UShaderContainer::UShaderContainer() {
+CShaderContainer::CShaderContainer() {
 
 }
 
-UShaderContainer::~UShaderContainer() {
-    for (int i = 0; i < mShaders.size(); i++) {
-        delete mShaders[i];
-        mShaders[i] = nullptr;
-    }
-
+CShaderContainer::~CShaderContainer() {
     mShaders.clear();
 }
 
-void UShaderContainer::Deserialize(bStream::CStream* stream) {
+void CShaderContainer::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
     mTextureDictionaryPtr = stream->readUInt64() & 0x0FFFFFFF;
 
@@ -267,7 +250,7 @@ void UShaderContainer::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curShaderPtr);
 
-        UShaderData* newShader = new UShaderData();
+        std::shared_ptr<CShaderData> newShader = std::make_shared<CShaderData>();
         newShader->Deserialize(stream);
         mShaders.push_back(newShader);
 
@@ -275,14 +258,14 @@ void UShaderContainer::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UShaderContainer::Serialize(bStream::CStream* stream) {
+void CShaderContainer::Serialize(bStream::CStream* stream) {
 
 }
 
-std::vector<UShader*> UShaderContainer::GetShaders() {
-    std::vector<UShader*> shaders;
+shared_vector<CShader> CShaderContainer::GetShaders() {
+    shared_vector<CShader> shaders;
 
-    for (UShaderData* d : mShaders) {
+    for (std::shared_ptr<CShaderData> d : mShaders) {
         shaders.push_back(d->GetShader());
     }
 

@@ -3,13 +3,14 @@
 #include "types.h"
 
 #include <vector>
+#include <memory>
 
-struct UDrawableDictionary;
-struct UDrawable;
+struct CDrawableDictionary;
+struct CDrawable;
 
-class UDrawableData;
+class CDrawableData;
 
-class UDrawableDictionaryData {
+class CDrawableDictionaryData {
     uint64_t mVTable; // 0x00
 
     class UBlockMap* mBlockMap; // 0x08
@@ -20,15 +21,15 @@ class UDrawableDictionaryData {
     std::vector<uint32_t> mHashes;
     uint32_t m002C;
 
-    std::vector<UDrawableData*> mDrawables;
+    shared_vector<CDrawableData> mDrawables;
     uint32_t m003C;
 
 public:
-    UDrawableDictionaryData();
-    virtual ~UDrawableDictionaryData();
+    CDrawableDictionaryData();
+    virtual ~CDrawableDictionaryData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 
-    UDrawableDictionary* GetDrawableDictionary();
+    std::shared_ptr<CDrawableDictionary> GetDrawableDictionary();
 };

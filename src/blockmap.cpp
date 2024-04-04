@@ -1,7 +1,8 @@
 #include "blockmap.hpp"
-#include "bstream.h"
 
-void UBlockMap::Deserialize(bStream::CStream* stream) {
+#include "util/bstream.h"
+
+void CBlockMap::Deserialize(bStream::CStream* stream) {
     m0000 = stream->readUInt32();
     m0004 = stream->readUInt32();
 
@@ -16,7 +17,7 @@ void UBlockMap::Deserialize(bStream::CStream* stream) {
     m001C = stream->readUInt32();
 }
 
-void UBlockMap::Serialize(bStream::CStream* stream) {
+void CBlockMap::Serialize(bStream::CStream* stream) {
     stream->writeUInt32(m0000);
     stream->writeUInt32(m0004);
 

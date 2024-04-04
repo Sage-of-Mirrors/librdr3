@@ -1,19 +1,19 @@
-#include "skeletondata.hpp"
-#include "skeleton.hpp"
-#include "bstream.h"
+#include "drawable/skeletondata.hpp"
+#include "drawable/skeleton.hpp"
+#include "util/bstream.h"
 
 
-/* UJointData */
+/* CJointData */
 
-UJointData::UJointData() {
-
-}
-
-UJointData::~UJointData() {
+CJointData::CJointData() {
 
 }
 
-void UJointData::Deserialize(bStream::CStream* stream) {
+CJointData::~CJointData() {
+
+}
+
+void CJointData::Deserialize(bStream::CStream* stream) {
     mRotation.x = stream->readFloat();
     mRotation.y = stream->readFloat();
     mRotation.z = stream->readFloat();
@@ -51,12 +51,12 @@ void UJointData::Deserialize(bStream::CStream* stream) {
     m004E = stream->readUInt16();
 }
 
-void UJointData::Serialize(bStream::CStream* stream) {
+void CJointData::Serialize(bStream::CStream* stream) {
 
 }
 
-UJoint* UJointData::GetJoint() {
-    UJoint* joint = new UJoint();
+std::shared_ptr<CJoint> CJointData::GetJoint() {
+    std::shared_ptr<CJoint> joint = std::make_shared<CJoint>();
 
     joint->Name = mName.data();
 
@@ -74,17 +74,17 @@ UJoint* UJointData::GetJoint() {
 }
 
 
-/* USkeletonData */
+/* CSkeletonData */
 
-USkeletonData::USkeletonData() {
-
-}
-
-USkeletonData::~USkeletonData() {
+CSkeletonData::CSkeletonData() {
 
 }
 
-void USkeletonData::Deserialize(bStream::CStream* stream) {
+CSkeletonData::~CSkeletonData() {
+
+}
+
+void CSkeletonData::Deserialize(bStream::CStream* stream) {
     size_t streamPos = 0;
 
     mVTable = stream->readUInt64();
@@ -126,7 +126,7 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
 
     stream->seek(inverseBindPosesPtr);
     for (int i = 0; i < jointCount; i++) {
-        UMatrix4 mat;
+        Matrix4 mat;
 
         mat.r0.x = stream->readFloat();
         mat.r0.y = stream->readFloat();
@@ -153,7 +153,7 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
 
     stream->seek(bindPosesPtr);
     for (int i = 0; i < jointCount; i++) {
-        UMatrix4 mat;
+        Matrix4 mat;
 
         mat.r0.x = stream->readFloat();
         mat.r0.y = stream->readFloat();
@@ -180,22 +180,22 @@ void USkeletonData::Deserialize(bStream::CStream* stream) {
 
     stream->seek(jointsPtr);
     for (int i = 0; i < jointCount; i++) {
-        UJointData* joint = new UJointData();
+        std::shared_ptr<CJointData> joint = std::make_shared<CJointData>();
         joint->Deserialize(stream);
 
         mJoints.push_back(joint);
     }
 }
 
-void USkeletonData::Serialize(bStream::CStream* stream) {
+void CSkeletonData::Serialize(bStream::CStream* stream) {
 
 }
 
-USkeleton* USkeletonData::GetSkeleton() {
-    USkeleton* skeleton = new USkeleton();
+std::shared_ptr<CSkeleton> CSkeletonData::GetSkeleton() {
+    std::shared_ptr<CSkeleton> skeleton = std::make_shared<CSkeleton>();
 
     for (int i = 0; i < mJoints.size(); i++) {
-        UJoint* joint = mJoints[i]->GetJoint();
+        std::shared_ptr<CJoint> joint = mJoints[i]->GetJoint();
         joint->InverseBindMatrix = mInverseBindMatrices[i];
         joint->BindMatrix = mBindMatrices[i];
 
@@ -203,23 +203,19 @@ USkeleton* USkeletonData::GetSkeleton() {
     }
 
     for (int i = 0; i < mJoints.size(); i++) {
-        UJointData* jointData = mJoints[i];
-        UJoint* joint = skeleton->FlatSkeleton[i];
+        std::shared_ptr<CJointData> jointData = mJoints[i];
+        std::shared_ptr<CJoint> joint = skeleton->FlatSkeleton[i];
 
         uint16_t parentIndex = jointData->GetParentIndex();
         if (parentIndex != 0xFFFF) {
             joint->Parent = skeleton->FlatSkeleton[parentIndex];
-            joint->Parent->Children.push_back(joint);
+            joint->Parent.lock()->Children.push_back(joint);
         }
         else {
-            joint->Parent = nullptr;
+            joint->Parent;
             skeleton->Root = joint;
         }
     }
 
     return skeleton;
-}
-
-UJoint* USkeletonData::BuildJointHierarchy(UJointData* current, USkeleton* skeleton) {
-    return nullptr;
 }

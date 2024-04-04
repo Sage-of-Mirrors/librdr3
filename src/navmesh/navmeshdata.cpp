@@ -1,22 +1,21 @@
-#include "ynv/navmeshdata.hpp"
-#include "ynv/quadtree.hpp"
+#include "navmesh/navmeshdata.hpp"
+#include "navmesh/quadtree.hpp"
 #include "util/streamutil.hpp"
-
-#include <bstream.h>
+#include "util/bstream.h"
 
 /* === Data deserialization functions === */
 
-void UNavmesh::DeserializeVertex(bStream::CStream* stream, std::shared_ptr<UVector3> vector) {
+void DeserializeVertex(bStream::CStream* stream, std::shared_ptr<Vector3> vector) {
     vector->x = float(stream->readUInt16()) / 65536.0f;
     vector->y = float(stream->readUInt16()) / 65536.0f;
     vector->z = float(stream->readUInt16()) / 65536.0f;
 }
 
-void UNavmesh::DeserializeVertexIndex(bStream::CStream* stream, std::shared_ptr<uint16_t> index) {
+void DeserializeVertexIndex(bStream::CStream* stream, std::shared_ptr<uint16_t> index) {
     *index = stream->readUInt16();
 }
 
-void UNavmesh::DeserializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr<UNavAdjacentPolyData> data) {
+void DeserializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr<CNavAdjacentPolyData> data) {
     uint32_t bitfield1 = stream->readUInt32();
     uint32_t bitfield2 = stream->readUInt32();
 
@@ -36,7 +35,7 @@ void UNavmesh::DeserializeAdjPolygonData(bStream::CStream* stream, std::shared_p
     data->bExternal          = (bitfield2 & 0x00800000)  >> 23;
 }
 
-void UNavmesh::DeserializePolygon(bStream::CStream* stream, std::shared_ptr<UNavPolygon> poly) {
+void DeserializePolygon(bStream::CStream* stream, std::shared_ptr<CNavPolygon> poly) {
     uint32_t flags1 = stream->readUInt32();
     poly->mInfo1.mFlags       = (flags1 & 0x001FFFFF);
     poly->mInfo1.mVertexCount = (flags1 & 0x01E00000) >> 21;
@@ -88,7 +87,7 @@ void UNavmesh::DeserializePolygon(bStream::CStream* stream, std::shared_ptr<UNav
     poly->m0036 = stream->readUInt16();
 }
 
-void UNavmesh::DeserializeLink(bStream::CStream* stream, std::shared_ptr<UNavLink> link) {
+void DeserializeLink(bStream::CStream* stream, std::shared_ptr<CNavLink> link) {
     link->m0000 = stream->readUInt16();
 
     link->m0002.x = stream->readInt16();
@@ -113,17 +112,17 @@ void UNavmesh::DeserializeLink(bStream::CStream* stream, std::shared_ptr<UNavLin
     link->m001C = stream->readUInt32();
 }
 
-void UNavmesh::SerializeVertex(bStream::CStream* stream, std::shared_ptr<UVector3> vector) {
+void SerializeVertex(bStream::CStream* stream, std::shared_ptr<Vector3> vector) {
     stream->writeUInt16(uint16_t(vector->x * 65536.0f));
     stream->writeUInt16(uint16_t(vector->y * 65536.0f));
     stream->writeUInt16(uint16_t(vector->z * 65536.0f));
 }
 
-void UNavmesh::SerializeVertexIndex(bStream::CStream* stream, std::shared_ptr<uint16_t> index) {
+void SerializeVertexIndex(bStream::CStream* stream, std::shared_ptr<uint16_t> index) {
     stream->writeUInt16(*index);
 }
 
-void UNavmesh::SerializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr<UNavAdjacentPolyData> data) {
+void SerializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr<CNavAdjacentPolyData> data) {
     uint32_t bitfield1 = 0;
     uint32_t bitfield2 = 0;
 
@@ -132,37 +131,37 @@ void UNavmesh::SerializeAdjPolygonData(bStream::CStream* stream, std::shared_ptr
     bitfield1 |= (data->mPolygonIndex & 0x00007FFF) << 5;
     bitfield1 |= (data->mAdjacencyType & 0x00000003) << 20;
     bitfield1 |= (int16_t(data->mSpaceAroundVertex / 0.25f) & 0x0000001F) << 22;
-    bitfield1 |= (int16_t(data->mSpaceBeyondEdge / 0.25f) & 0x0000001F) << 27;
+    bitfield1 |= (int16_t(data->mSpaceBeyondEdge   / 0.25f) & 0x0000001F) << 27;
 
     stream->writeUInt32(bitfield1);
     stream->writeUInt32(bitfield2);
 }
 
-void UNavmesh::SerializePolygon(bStream::CStream* stream, std::shared_ptr<UNavPolygon> poly) {
+void SerializePolygon(bStream::CStream* stream, std::shared_ptr<CNavPolygon> poly) {
     // TODO: Serialize polygons
     for (int i = 0; i < 0x38; i++) {
         stream->writeUInt8(0);
     }
 }
 
-void UNavmesh::SerializeLink(bStream::CStream* stream, std::shared_ptr<UNavLink> link) {
+void SerializeLink(bStream::CStream* stream, std::shared_ptr<CNavLink> link) {
     // TODO: Serialize links
     for (int i = 0; i < 0x20; i++) {
         stream->writeUInt8(0);
     }
 }
 
-/* === UNavmeshData === */
+/* === CNavmeshData === */
 
-UNavmesh::UNavmeshData::UNavmeshData() : mQuadtreeRoot(std::make_shared<UNavQuadtreeNode>()) {
-
-}
-
-UNavmesh::UNavmeshData::~UNavmeshData() {
+CNavmeshData::CNavmeshData() {
 
 }
 
-void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
+CNavmeshData::~CNavmeshData() {
+
+}
+
+void CNavmeshData::Deserialize(bStream::CStream* stream) {
     if (stream == nullptr) {
         return;
     }
@@ -170,7 +169,7 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     assert(stream->readUInt64() == 0); // VTable pointer, always 0
 
     // Read blockmap
-    uint64_t blockMapPtr = UStreamUtil::DeserializePtr64(stream);
+    uint64_t blockMapPtr = StreamUtil::DeserializePtr64(stream);
     if (blockMapPtr != 0) {
         size_t streamPos = stream->tell();
         stream->seek(blockMapPtr);
@@ -185,12 +184,12 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     assert(stream->readUInt64() == 0);
 
     // Transform matrix
-    UStreamUtil::DeserializeMatrix3x4(stream, mTransformMatrix);
+    StreamUtil::DeserializeMatrix3x4(stream, mTransformMatrix);
     assert(stream->readUInt64() == 0); // Padding
     assert(stream->readUInt64() == 0); // Padding
 
     // Mesh extents
-    UStreamUtil::DeserializeVector3(stream, mMeshExtents);
+    StreamUtil::DeserializeVector3(stream, mMeshExtents);
     stream->skip(4);
 
     // Vertices
@@ -215,11 +214,13 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
 
     // Polygons
     mPolygons.Deserialize(stream, DeserializePolygon);
+
     // Quadtree
+    mQuadtreeRoot = std::make_shared<CNavQuadtreeNode>();
     mQuadtreeRoot->Deserialize(stream);
 
-    uint64_t linksOffset = UStreamUtil::DeserializePtr64(stream);
-    uint64_t linkIndicesOffset = UStreamUtil::DeserializePtr64(stream);
+    uint64_t linksOffset = StreamUtil::DeserializePtr64(stream);
+    uint64_t linkIndicesOffset = StreamUtil::DeserializePtr64(stream);
 
     mVertexCount = stream->readUInt32();
     mPolygonCount = stream->readUInt32();
@@ -245,10 +246,10 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     assert(stream->readUInt32() == 0);
 
     // Links, if the mesh has them
-    if (GetFlag(ENavMeshFlags::HasLinks)) {
+    if (GetFlag(ENavMeshFlags::HAS_LINKS)) {
         stream->seek(linksOffset);
         for (uint32_t i = 0; i < mLinkCount; i++) {
-            std::shared_ptr<UNavLink> link = std::make_shared<UNavLink>();
+            std::shared_ptr<CNavLink> link = std::make_shared<CNavLink>();
             DeserializeLink(stream, link);
 
             mLinks.push_back(link);
@@ -263,30 +264,30 @@ void UNavmesh::UNavmeshData::Deserialize(bStream::CStream* stream) {
     ProcessData();
 }
 
-void UNavmesh::UNavmeshData::ProcessData() {
+void CNavmeshData::ProcessData() {
     mSectorY = (mSectorIndex / 215);
     mSectorX = mSectorIndex - (mSectorY * 215);
     mSectorY *= 3;
     mSectorX *= 3;
 
     for (uint32_t i = 0; i < mVertices.GetTotalSize(); i++) {
-        UVector3* vertex = mVertices[i].get();
+        Vector3* vertex = mVertices[i].get();
         *vertex = *vertex * (mQuadtreeRoot->mBoundsMax - mQuadtreeRoot->mBoundsMin) + mQuadtreeRoot->mBoundsMin;
     }
 }
 
-void UNavmesh::UNavmeshData::Serialize(bStream::CStream* stream) {
+void CNavmeshData::Serialize(bStream::CStream* stream) {
     stream->writeUInt64(0); // VTable pointer
     stream->writeUInt64(0); // Block map pointer, TODO
     stream->writeUInt32(mFlags);
     stream->writeUInt32(RDR3_NAVMESH_VERSION);
     stream->writeUInt64(0); // Padding
 
-    UStreamUtil::SerializeMatrix3x4(stream, mTransformMatrix);
-    UStreamUtil::PadStream(stream, 32);
+    StreamUtil::SerializeMatrix3x4(stream, mTransformMatrix);
+    StreamUtil::PadStream(stream, 32);
 
-    UStreamUtil::SerializeVector3(stream, mMeshExtents);
-    UStreamUtil::PadStream(stream, 16);
+    StreamUtil::SerializeVector3(stream, mMeshExtents);
+    StreamUtil::PadStream(stream, 16);
 
     stream->writeUInt64(0); // Placeholder for vertex array pointer
     stream->writeUInt64(0); // Placeholder for unused uncompressed vertex array pointer
@@ -333,7 +334,7 @@ void UNavmesh::UNavmeshData::Serialize(bStream::CStream* stream) {
 
     stream->writeUInt32(0); // Placeholder for build id... can we calculate this?
 
-    UStreamUtil::PadStream(stream, 16);
+    StreamUtil::PadStream(stream, 16);
     uint32_t totalDataWritten = 0;
     
     if (mLinks.size() > 0) {
@@ -341,28 +342,28 @@ void UNavmesh::UNavmeshData::Serialize(bStream::CStream* stream) {
         curPos = stream->tell();
 
         stream->seek(0x128);
-        UStreamUtil::SerializePtr64(stream, uint64_t(curPos));
+        StreamUtil::SerializePtr64(stream, uint64_t(curPos));
         stream->seek(curPos);
 
         for (size_t i = 0; i < mLinks.size(); i++) {
             SerializeLink(stream, mLinks[i]);
         }
 
-        UStreamUtil::PadStream(stream, 16);
+        StreamUtil::PadStream(stream, 16);
         totalDataWritten += uint32_t(stream->tell() - curPos);
 
         // Write link indices
         curPos = stream->tell();
 
         stream->seek(0x0130);
-        UStreamUtil::SerializePtr64(stream, uint64_t(curPos));
+        StreamUtil::SerializePtr64(stream, uint64_t(curPos));
         stream->seek(curPos);
 
         for (size_t i = 0; i < mLinkIndices.size(); i++) {
             stream->writeUInt16(mLinkIndices[i]);
         }
 
-        UStreamUtil::PadStream(stream, 16);
+        StreamUtil::PadStream(stream, 16);
         totalDataWritten += uint32_t(stream->tell() - curPos);
     }
 
@@ -379,31 +380,31 @@ void UNavmesh::UNavmeshData::Serialize(bStream::CStream* stream) {
     uint64_t indexArrayOffset = mVertexIndices.SerializeMetadata(stream, 0x40828868);
     uint64_t vertexArrayOffset = mVertices.SerializeMetadata(stream,     0x40828878);
 
-    UStreamUtil::PadStream(stream, 16);
+    StreamUtil::PadStream(stream, 16);
 
     stream->seek(0x0070);
-    UStreamUtil::SerializePtr64(stream, vertexArrayOffset);
+    StreamUtil::SerializePtr64(stream, vertexArrayOffset);
     
     stream->seek(0x0080);
-    UStreamUtil::SerializePtr64(stream, indexArrayOffset);
+    StreamUtil::SerializePtr64(stream, indexArrayOffset);
 
     stream->seek(0x0088);
-    UStreamUtil::SerializePtr64(stream, adjPolyOffset);
+    StreamUtil::SerializePtr64(stream, adjPolyOffset);
 
     stream->seek(0x0118);
-    UStreamUtil::SerializePtr64(stream, polyArrayOffset);
+    StreamUtil::SerializePtr64(stream, polyArrayOffset);
 
     stream->seek(0x0144);
     stream->writeUInt32(totalDataWritten);
 }
 
-void UNavmesh::UNavmeshData::GetVertices(float*& vtxData, uint32_t*& indexData, uint32_t& vtxCount, uint32_t& indexCount) {
-    uint32_t vtxSize = (sizeof(UVector3) + sizeof(UVector3));
-    std::vector<UVector3> vtxs;
+void CNavmeshData::GetVertices(float*& vtxData, uint32_t*& indexData, uint32_t& vtxCount, uint32_t& indexCount) {
+    uint32_t vtxSize = (sizeof(Vector3) + sizeof(Vector3));
+    std::vector<Vector3> vtxs;
     std::vector<uint32_t> idxs;
 
     for (uint32_t polyIdx = 0; polyIdx < mPolygons.GetTotalSize(); polyIdx++) {
-        std::shared_ptr<UNavPolygon> poly = mPolygons[polyIdx];
+        std::shared_ptr<CNavPolygon> poly = mPolygons[polyIdx];
         if (poly->mInfo1.mVertexCount < 3) {
             continue;
         }
@@ -416,14 +417,14 @@ void UNavmesh::UNavmeshData::GetVertices(float*& vtxData, uint32_t*& indexData, 
             }
             case 3:
             {
-                UVector3 a = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp();
-                UVector3 b = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 1]]).toZUp();
-                UVector3 c = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 2]]).toZUp();
+                Vector3 a = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp();
+                Vector3 b = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 1]]).toZUp();
+                Vector3 c = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 2]]).toZUp();
 
-                UVector3 ab = a - b;
-                UVector3 bc = b - c;
+                Vector3 ab = a - b;
+                Vector3 bc = b - c;
 
-                UVector3 polyNormal = ab.cross(bc).normalized();
+                Vector3 polyNormal = ab.cross(bc).normalized();
                 if (polyNormal.y < 0) {
                     polyNormal = bc.cross(ab).normalized();
                 }
@@ -445,14 +446,14 @@ void UNavmesh::UNavmeshData::GetVertices(float*& vtxData, uint32_t*& indexData, 
             default:
             {
                 for (uint32_t vtxIdx = 0; vtxIdx < poly->mInfo1.mVertexCount - 2; vtxIdx++) {
-                    UVector3 a = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp();
-                    UVector3 b = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 1]]).toZUp();
-                    UVector3 c = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 2]]).toZUp();
+                    Vector3 a = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + 0]]).toZUp();
+                    Vector3 b = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 1]]).toZUp();
+                    Vector3 c = (*mVertices[*mVertexIndices[poly->mInfo2.mFirstVertexIndex + vtxIdx + 2]]).toZUp();
 
-                    UVector3 ab = a - b;
-                    UVector3 bc = b - c;
+                    Vector3 ab = a - b;
+                    Vector3 bc = b - c;
 
-                    UVector3 polyNormal = ab.cross(bc).normalized();
+                    Vector3 polyNormal = ab.cross(bc).normalized();
 
                     uint32_t baseIdx = uint32_t(vtxs.size() / 2);
                     idxs.push_back(baseIdx);
@@ -481,11 +482,11 @@ void UNavmesh::UNavmeshData::GetVertices(float*& vtxData, uint32_t*& indexData, 
     std::memcpy(indexData, idxs.data(), indexCount * sizeof(uint32_t));
 }
 
-void UNavmesh::UNavmeshData::GetIndicesForPolys(uint32_t*& data, uint32_t& indexCount) {
+void CNavmeshData::GetIndicesForPolys(uint32_t*& data, uint32_t& indexCount) {
     std::vector<uint32_t> triIndices;
 
     for (uint32_t polyIdx = 0; polyIdx < mPolygons.GetTotalSize(); polyIdx++) {
-        std::shared_ptr<UNavPolygon> poly = mPolygons[polyIdx];
+        std::shared_ptr<CNavPolygon> poly = mPolygons[polyIdx];
 
         switch (poly->mInfo1.mVertexCount) {
             case 1:
@@ -522,7 +523,7 @@ void UNavmesh::UNavmeshData::GetIndicesForPolys(uint32_t*& data, uint32_t& index
     std::memcpy(data, triIndices.data(), triIndices.size() * sizeof(uint32_t));
 }
 
-void UNavmesh::UNavmeshData::Debug_DumpToObj(std::string objFile) {
+void CNavmeshData::Debug_DumpToObj(std::string objFile) {
     std::stringstream stream;
 
     for (uint32_t i = 0; i < mVertices.GetTotalSize(); i++) {

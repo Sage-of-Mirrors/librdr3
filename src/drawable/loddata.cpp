@@ -1,21 +1,21 @@
-#include "loddata.hpp"
-#include "drawable.hpp"
-#include "bstream.h"
+#include "drawable/loddata.hpp"
+#include "drawable/drawable.hpp"
+#include "util/bstream.h"
 
 #include <string>
 
 
-/* UGeometry */
+/* CGeometry */
 
-UGeometryData::UGeometryData() {
-
-}
-
-UGeometryData::~UGeometryData() {
+CGeometryData::CGeometryData() {
 
 }
 
-void UGeometryData::Deserialize(bStream::CStream* stream) {
+CGeometryData::~CGeometryData() {
+
+}
+
+void CGeometryData::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
 
     uint64_t vertexBufferPtr = stream->readUInt64() & 0x0FFFFFFF;
@@ -34,38 +34,34 @@ void UGeometryData::Deserialize(bStream::CStream* stream) {
     mIndexBuffer.Deserialize(stream);
 }
 
-void UGeometryData::Serialize(bStream::CStream* stream) {
+void CGeometryData::Serialize(bStream::CStream* stream) {
 
 }
 
-std::array<uint32_t, 8> UGeometryData::GetAttributeCounts() {
+std::array<uint32_t, 8> CGeometryData::GetAttributeCounts() {
     return {
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_POSITION), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_NORMAL), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_TANGENT), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_BINORMAL), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_BLENDINDEX), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_BLENDWEIGHT), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_COLOR), 4),
-        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::VAT_TEXCOORD), 24),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::POSITION), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::NORMAL), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::TANGENT), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::BINORMAL), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::BLENDINDEX), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::BLENDWEIGHT), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::COLOR), 4),
+        mVertexBuffer.GetAttributeCount(static_cast<uint32_t>(EVertexAttribute::TEXCOORD), 24),
     };
 }
 
-/* UModel */
+/* CModel */
 
-UModelData::UModelData() {
+CModelData::CModelData() {
 
 }
 
-UModelData::~UModelData() {
-    for (UGeometryData* geom : mGeometry) {
-        delete geom;
-    }
-
+CModelData::~CModelData() {
     mGeometry.clear();
 }
 
-void UModelData::Deserialize(bStream::CStream* stream) {
+void CModelData::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
 
     uint64_t geometryPtr = stream->readUInt64() & 0x0FFFFFFF;
@@ -129,7 +125,7 @@ void UModelData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curGeometryPtr);
 
-        UGeometryData* geom = new UGeometryData();
+        std::shared_ptr<CGeometryData> geom = std::make_shared<CGeometryData>();
         geom->Deserialize(stream);
         mGeometry.push_back(geom);
 
@@ -137,16 +133,16 @@ void UModelData::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UModelData::Serialize(bStream::CStream* stream) {
+void CModelData::Serialize(bStream::CStream* stream) {
 
 }
 
-UModel* UModelData::GetModel() {
-    UModel* model = new UModel();
+std::shared_ptr<CModel> CModelData::GetModel() {
+    std::shared_ptr<CModel> model = std::make_shared<CModel>();
 
     for (int i = 0; i < mGeometry.size(); i++) {
-        UGeometryData* geomData = mGeometry[i];
-        UGeometry* geom = new UGeometry();
+        std::shared_ptr<CGeometryData> geomData = mGeometry[i];
+        std::shared_ptr<CGeometry> geom = std::make_shared<CGeometry>();
 
         geom->Vertices = geomData->GetVertexBuffer()->GetVertices();
         geom->Indices = geomData->GetIndexBuffer()->GetIndices();
@@ -169,14 +165,14 @@ UModel* UModelData::GetModel() {
     return model;
 }
 
-void UModelData::Debug_DumpObjFile(bStream::CStream* stream) {
+void CModelData::Debug_DumpObjFile(bStream::CStream* stream) {
     uint64_t vertexCount = 1;
 
     for (int i = 0; i < mGeometry.size(); i++) {
-        std::vector<UVertex*> vertices = mGeometry[i]->GetVertexBuffer()->GetVertices();
+        shared_vector<CVertex> vertices = mGeometry[i]->GetVertexBuffer()->GetVertices();
         std::vector<uint32_t> indices = mGeometry[i]->GetIndexBuffer()->GetIndices();
 
-        for (UVertex* v : vertices) {
+        for (std::shared_ptr<CVertex> v : vertices) {
             stream->writeString("v " + std::to_string(v->Position[0].x) + " " + std::to_string(v->Position[0].y) + " " + std::to_string(v->Position[0].z) + "\n");
             stream->writeString("vt " + std::to_string(v->TexCoord[0].x) + " " + std::to_string(v->TexCoord[0].y) + "\n");
             stream->writeString("vn " + std::to_string(v->Normal[0].x) + " " + std::to_string(v->Normal[0].y) + " " + std::to_string(v->Normal[0].z) + "\n");
@@ -201,21 +197,17 @@ void UModelData::Debug_DumpObjFile(bStream::CStream* stream) {
 }
 
 
-/* ULodData */
+/* CLodData */
 
-ULodData::ULodData() {
+CLodData::CLodData() {
 
 }
 
-ULodData::~ULodData() {
-    for (UModelData* model : mModels) {
-        delete model;
-    }
-
+CLodData::~CLodData() {
     mModels.clear();
 }
 
-void ULodData::Deserialize(bStream::CStream* stream) {
+void CLodData::Deserialize(bStream::CStream* stream) {
     uint64_t modelsPtr = stream->readUInt64() & 0x0FFFFFFF;
     uint16_t modelCount = stream->readUInt16();
     uint16_t modelCapacity = stream->readUInt16();
@@ -230,7 +222,7 @@ void ULodData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curModelPtr);
 
-        UModelData* model = new UModelData();
+        std::shared_ptr<CModelData> model = std::make_shared<CModelData>();
         model->Deserialize(stream);
         mModels.push_back(model);
 
@@ -238,21 +230,21 @@ void ULodData::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void ULodData::Serialize(bStream::CStream* stream, uint8_t lodIndex) {
+void CLodData::Serialize(bStream::CStream* stream, uint8_t lodIndex) {
 
 }
 
-ULod* ULodData::GetLod() {
-    ULod* lod = new ULod();
+std::shared_ptr<CLod> CLodData::GetLod() {
+    std::shared_ptr<CLod> lod = std::make_shared<CLod>();
 
-    for (UModelData* modelData : mModels) {
+    for (std::shared_ptr<CModelData> modelData : mModels) {
         lod->Models.push_back(modelData->GetModel());
     }
 
     return lod;
 }
 
-void ULodData::Debug_DumpObjFile() {
+void CLodData::Debug_DumpObjFile() {
     for (int i = 0; i < mModels.size(); i++) {
         bStream::CFileStream modelStream("D:\\RedDead\\model" + std::to_string(i) + ".obj", bStream::Out);
 

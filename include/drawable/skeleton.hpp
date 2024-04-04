@@ -1,23 +1,24 @@
 #pragma once
 
 #include "types.h"
-#include "math.hpp"
+#include "util/math.hpp"
 
 #include <vector>
 #include <array>
 #include <string>
+#include <memory>
 
-struct UJoint {
+struct CJoint {
     std::string Name;
-    UMatrix4 InverseBindMatrix;
-    UMatrix4 BindMatrix;
+    Matrix4 InverseBindMatrix;
+    Matrix4 BindMatrix;
 
-    UVector4 Rotation;
-    UVector3 Translation;
-    UVector3 Scale;
+    Vector4 Rotation;
+    Vector3 Translation;
+    Vector3 Scale;
 
-    UJoint* Parent;
-    std::vector<UJoint*> Children;
+    std::weak_ptr<CJoint> Parent;
+    shared_vector<CJoint> Children;
 
     std::array<float, 4> GetRotation() {
         std::array<float, 4> t;
@@ -106,7 +107,7 @@ struct UJoint {
     }
 };
 
-struct USkeleton {
-    UJoint* Root;
-    std::vector<UJoint*> FlatSkeleton;
+struct CSkeleton {
+    std::weak_ptr<CJoint> Root;
+    shared_vector<CJoint> FlatSkeleton;
 };

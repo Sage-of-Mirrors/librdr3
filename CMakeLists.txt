@@ -4,16 +4,19 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE LIBRDR3_SRC
-    "src/*.c"
     "src/*.cpp"
     "include/*.h"
     "include/*.hpp"
 
-    "src/ynv/*.cpp"
-    "include/ynv/*.hpp"
+    "src/navmesh/*.cpp"
+    "include/navmesh/*.hpp"
 
     "src/util/*.cpp"
-    "include/util/*.hpp")
+    "include/util/*.hpp"
+
+    "src/drawable/*.cpp"
+    "include/drawable/*.hpp"
+)
 
 add_library(librdr3 ${LIBRDR3_SRC})
 

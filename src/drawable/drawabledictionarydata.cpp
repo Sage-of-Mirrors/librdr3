@@ -1,22 +1,18 @@
-#include "drawabledictionarydata.hpp"
-#include "drawabledictionary.hpp"
-#include "drawabledata.hpp"
-#include "bstream.h"
+#include "drawable/drawabledictionarydata.hpp"
+#include "drawable/drawabledictionary.hpp"
+#include "drawable/drawabledata.hpp"
 
-UDrawableDictionaryData::UDrawableDictionaryData() {
+#include "util/bstream.h"
+
+CDrawableDictionaryData::CDrawableDictionaryData() {
 
 }
 
-UDrawableDictionaryData::~UDrawableDictionaryData() {
-    for (int i = 0; i < mDrawables.size(); i++) {
-        delete mDrawables[i];
-        mDrawables[i] = nullptr;
-    }
-
+CDrawableDictionaryData::~CDrawableDictionaryData() {
     mDrawables.clear();
 }
 
-void UDrawableDictionaryData::Deserialize(bStream::CStream* stream) {
+void CDrawableDictionaryData::Deserialize(bStream::CStream* stream) {
     mVTable = stream->readUInt64();
     uint64_t blockMapPtr = stream->readUInt64() & 0x0FFFFFFF;
 
@@ -49,7 +45,7 @@ void UDrawableDictionaryData::Deserialize(bStream::CStream* stream) {
         streamPos = stream->tell();
         stream->seek(curDrawablePtr);
 
-        UDrawableData* drawable = new UDrawableData();
+        std::shared_ptr<CDrawableData> drawable = std::make_shared<CDrawableData>();
         drawable->Deserialize(stream);
         mDrawables.push_back(drawable);
 
@@ -57,15 +53,15 @@ void UDrawableDictionaryData::Deserialize(bStream::CStream* stream) {
     }
 }
 
-void UDrawableDictionaryData::Serialize(bStream::CStream* stream) {
+void CDrawableDictionaryData::Serialize(bStream::CStream* stream) {
 
 }
 
-UDrawableDictionary* UDrawableDictionaryData::GetDrawableDictionary() {
-    UDrawableDictionary* dict = new UDrawableDictionary();
+std::shared_ptr<CDrawableDictionary> CDrawableDictionaryData::GetDrawableDictionary() {
+    std::shared_ptr<CDrawableDictionary> dict = std::make_shared<CDrawableDictionary>();
 
     for (int i = 0; i < mDrawables.size(); i++) {
-        UDrawable* drawable = mDrawables[i]->GetDrawable();
+        std::shared_ptr<CDrawable> drawable = mDrawables[i]->GetDrawable();
         drawable->DictionaryHash = mHashes[i];
 
         dict->Drawables.push_back(drawable);

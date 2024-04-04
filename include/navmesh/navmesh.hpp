@@ -1,7 +1,7 @@
 #pragma once
 
 #include "types.h"
-#include "math.hpp"
+#include "util/math.hpp"
 
 //struct UNavmesh {
 //

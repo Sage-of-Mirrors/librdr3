@@ -1,58 +1,58 @@
 #include "librdr3.hpp"
-#include "bstream.h"
 
-#include "drawable.hpp"
-#include "drawabledata.hpp"
+#include "drawable/drawable.hpp"
+#include "drawable/drawabledata.hpp"
+#include "drawable/drawabledictionary.hpp"
+#include "drawable/drawabledictionarydata.hpp"
 
-#include "drawabledictionary.hpp"
-#include "drawabledictionarydata.hpp"
+#include "util/bstream.h"
 
-UDrawable* librdr3::ImportYdr(std::string filePath) {
+std::shared_ptr<CDrawable> librdr3::ImportYdr(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 
-    UDrawableData data;
+    CDrawableData data;
     data.Deserialize(&stream);
 
     return data.GetDrawable();
 }
 
-UDrawableDictionary* librdr3::ImportYdd(std::string filePath) {
+std::shared_ptr<CDrawableDictionary> librdr3::ImportYdd(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 
-    UDrawableDictionaryData data;
+    CDrawableDictionaryData data;
     data.Deserialize(&stream);
 
     return data.GetDrawableDictionary();
 }
 
-UFragment* librdr3::ImportYft(std::string filePath) {
+std::shared_ptr<CFragment> librdr3::ImportYft(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 }
 
-std::shared_ptr<UNavmesh::UNavmeshData> librdr3::ImportYnv(std::string filePath) {
+std::shared_ptr<CNavmeshData> librdr3::ImportYnv(std::string filePath) {
     bStream::CFileStream stream(filePath);
     if (stream.peekUInt32(0) != 0) {
         return nullptr;
     }
 
-    std::shared_ptr<UNavmesh::UNavmeshData> data = std::make_shared<UNavmesh::UNavmeshData>();
+    std::shared_ptr<CNavmeshData> data = std::make_shared<CNavmeshData>();
     data->Deserialize(&stream);
 
     return data;
 }
 
-bool librdr3::ExportYdr(std::string filePath, UDrawable* data) {
+bool librdr3::ExportYdr(std::string filePath, std::shared_ptr<CDrawable> data) {
     // Set up drawable data for serialization
-    UDrawableData* d = new UDrawableData();
+    CDrawableData* d = new CDrawableData();
     d->SetDrawable(data);
 
     // Serialize drawable data to memory stream and dispose of it
@@ -67,7 +67,7 @@ bool librdr3::ExportYdr(std::string filePath, UDrawable* data) {
     return true;
 }
 
-bool librdr3::ExportYnv(std::string filePath, UNavmeshShared data) {
+bool librdr3::ExportYnv(std::string filePath, std::shared_ptr<CNavmeshData> data) {
     try {
         bStream::CFileStream ynvStream(filePath, bStream::Little, bStream::Out);
         data->Serialize(&ynvStream);

@@ -1,31 +1,32 @@
 #pragma once
 
 #include "types.h"
-#include "math.hpp"
+#include "util/math.hpp"
 
 #include <vector>
 #include <string>
+#include <memory>
 
-struct UShader;
-struct UShaderUniform;
+struct CShader;
+struct CShaderUniform;
 
 enum class EParameterType : uint8_t {
-    PRM_TEXTURE,
-    PRM_UNKNOWN,
-    PRM_SAMPLER,
-    PRM_PARAMETER
+    TEXTURE,
+    UNKNOWN,
+    SAMPLER,
+    PARAMETER
 };
 
-class UTextureData {
+class CTextureData {
 public:
-    UTextureData();
-    virtual ~UTextureData();
+    CTextureData();
+    virtual ~CTextureData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 };
 
-class UShaderUniformData {
+class CShaderUniformData {
     uint32_t mNameHash;
 
     EParameterType mType;
@@ -39,21 +40,21 @@ class UShaderUniformData {
     std::string mName;
 
 public:
-    UShaderUniformData();
-    virtual ~UShaderUniformData();
+    CShaderUniformData();
+    virtual ~CShaderUniformData();
 
     void Deserialize(bStream::CStream* stream, uint64_t parametersPtr);
     void Serialize(bStream::CStream* stream);
 
-    UShaderUniform* GetShaderUniform();
+    std::shared_ptr<CShaderUniform> GetShaderUniform();
 };
 
-class UShaderData {
+class CShaderData {
     uint32_t mNameHash;
     uint32_t mType;
 
-    std::vector<UShaderUniformData*> mUniforms;
-    std::vector<UTextureData*> mTextures;
+    shared_vector<CShaderUniformData> mUniforms;
+    shared_vector<CTextureData> mTextures;
 
     uint64_t m0018;
     
@@ -68,20 +69,20 @@ class UShaderData {
     std::string mName;
 
 public:
-    UShaderData();
-    virtual ~UShaderData();
+    CShaderData();
+    virtual ~CShaderData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 
-    UShader* GetShader();
+    std::shared_ptr<CShader> GetShader();
 };
 
-class UShaderContainer {
+class CShaderContainer {
     uint64_t mVTable;
     uint64_t mTextureDictionaryPtr;
 
-    std::vector<UShaderData*> mShaders;
+    shared_vector<CShaderData> mShaders;
     uint32_t m001C;
 
     uint64_t m0020;
@@ -93,11 +94,11 @@ class UShaderContainer {
     uint64_t m0038;
 
 public:
-    UShaderContainer();
-    virtual ~UShaderContainer();
+    CShaderContainer();
+    virtual ~CShaderContainer();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 
-    std::vector<UShader*> GetShaders();
+    shared_vector<CShader> GetShaders();
 };

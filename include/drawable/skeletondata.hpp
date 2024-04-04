@@ -1,18 +1,18 @@
 #pragma once
 
 #include "types.h"
-#include "math.hpp"
+#include "util/math.hpp"
 
 #include <vector>
 #include <string>
 
-struct UJoint;
-struct USkeleton;
+struct CJoint;
+struct CSkeleton;
 
-class UJointData {
-    UVector4 mRotation;
-    UVector4 mTranslation;
-    UVector4 mScale;
+class CJointData {
+    Vector4 mRotation;
+    Vector4 mTranslation;
+    Vector4 mScale;
 
     std::string mName;
 
@@ -31,8 +31,8 @@ class UJointData {
     uint16_t m004E;
 
 public:
-    UJointData();
-    virtual ~UJointData();
+    CJointData();
+    virtual ~CJointData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
@@ -40,31 +40,30 @@ public:
     uint16_t GetParentIndex() const { return mParentIndex; }
     uint16_t GetNextSiblingIndex() const { return mNextSiblingIndex; }
 
-    UJoint* GetJoint();
+    std::shared_ptr<CJoint> GetJoint();
 };
 
-class USkeletonData {
+class CSkeletonData {
     uint64_t mVTable; // 0x00
     uint64_t m0008;   // 0x08
 
     uint32_t m001C;
 
-    std::vector<UJointData*> mJoints;
+    shared_vector<CJointData> mJoints;
 
-    std::vector<UMatrix4> mInverseBindMatrices;
-    std::vector<UMatrix4> mBindMatrices;
+    std::vector<Matrix4> mInverseBindMatrices;
+    std::vector<Matrix4> mBindMatrices;
 
     std::vector<uint16_t> mIndices;
 
     uint16_t mExternalParentJointTag; // This is the tag of this skeleton's parent joint in another skeleton, e.g. fragments.
 
 public:
-    USkeletonData();
-    virtual ~USkeletonData();
+    CSkeletonData();
+    virtual ~CSkeletonData();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);
 
-    USkeleton* GetSkeleton();
-    UJoint* BuildJointHierarchy(UJointData* current, USkeleton* skeleton);
+    std::shared_ptr<CSkeleton> GetSkeleton();
 };

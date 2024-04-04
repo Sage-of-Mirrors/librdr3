@@ -2,11 +2,7 @@
 
 #include "types.h"
 
-namespace bStream {
-    class CStream;
-}
-
-class UBlockMap {
+class CBlockMap {
     uint32_t m0000;             // 0x00
     uint32_t m0004;             // 0x04
     uint8_t mVirtualPageCount;  // 0x08
@@ -20,8 +16,8 @@ class UBlockMap {
     uint32_t m001C; // 0x1C
 
 public:
-    UBlockMap();
-    virtual ~UBlockMap();
+    CBlockMap();
+    virtual ~CBlockMap();
 
     void Deserialize(bStream::CStream* stream);
     void Serialize(bStream::CStream* stream);

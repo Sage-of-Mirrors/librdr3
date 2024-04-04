@@ -1,13 +1,14 @@
-#include "bstream.h"
+#include "util/bstream.h"
 
 #include <librdr3.hpp>
-#include <drawable.hpp>
-#include <drawabledictionary.hpp>
-#include <ynv/navmeshdata.hpp>
+#include <drawable/drawable.hpp>
+#include <drawable/drawabledictionary.hpp>
+#include <navmesh/navmeshdata.hpp>
 
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 #include "json.hpp"
 
@@ -26,28 +27,23 @@ int main(int argc, char* argv[]) {
 }
 
 void LoadDrawable() {
-    UDrawable* drw = ImportYdr("D:\\RedDead\\miy_fort.ydr");
-    ExportYdr("D:\\RedDead\\ydr_export_test.ydr", drw);
-
-    delete drw;
+    std::shared_ptr<CDrawable> drw = librdr3::ImportYdr("D:\\RedDead\\miy_fort.ydr");
+    librdr3::ExportYdr("D:\\RedDead\\ydr_export_test.ydr", drw);
 }
 
 void LoadDrawableDictionary() {
-    UDrawableDictionary* dict = ImportYdd("D:\\RedDead\\feet_tr1_001.ydd");
-    delete dict;
+    std::shared_ptr<CDrawableDictionary> dict = librdr3::ImportYdd("D:\\RedDead\\feet_tr1_001.ydd");
 }
 
 void LoadNavmesh() {
-    UNavmesh::UNavmeshData* nv = ImportYnv("D:\\RedDead\\Navmesh\\nav_std_train_station_es_navmesh[366][291].ynv");
+    std::shared_ptr<CNavmeshData> nv = librdr3::ImportYnv("D:\\RedDead\\Navmesh\\nav_std_train_station_es_navmesh[366][291].ynv");
     bStream::CFileStream st("D:\\RedDead\\Navmesh\\test.ynv", bStream::Little, bStream::Out);
     nv->Serialize(&st);
-    delete nv;
 }
 
 void DumpShaderData() {
     std::filesystem::path rootDir = "D:\\RedDead\\ydr";
     std::filesystem::path shaderDir = "D:\\RedDead\\ydr\\shader";
-    UDrawable* drawable = nullptr;
 
     uint64_t fileCount = 0;
     for (const auto& p : std::filesystem::directory_iterator(rootDir)) {
@@ -56,34 +52,35 @@ void DumpShaderData() {
         }
 
         std::cout << p.path() << std::endl;
+        std::shared_ptr<CDrawable> drawable;
 
         try {
-            drawable = ImportYdr(p.path().generic_u8string());
+            drawable = librdr3::ImportYdr(p.path().generic_u8string());
 
             if (drawable == nullptr) {
                 continue;
             }
 
             // For each valid LOD...
-            for (auto* lod : drawable->Lods) {
+            for (auto lod : drawable->Lods) {
                 if (lod == nullptr) {
                     continue;
                 }
 
                 // For each valid model...
-                for (auto* model : lod->Models) {
+                for (auto model : lod->Models) {
                     if (model == nullptr) {
                         continue;
                     }
 
                     // For each valid geometry with a shader...
-                    for (auto* geom : model->Geometries) {
+                    for (auto geom : model->Geometries) {
                         if (geom == nullptr || geom->Shader == nullptr) {
                             continue;
                         }
 
                         // Grab shader and check if a JSON file already exists for it
-                        UShader* shader = geom->Shader;
+                        std::shared_ptr<CShader> shader = geom->Shader;
                         std::filesystem::path shaderTemplatePath = shaderDir / (shader->Name + ".json");
                         if (std::filesystem::exists(shaderTemplatePath)) {
                             continue;
@@ -118,9 +115,6 @@ void DumpShaderData() {
             std::cout << "Failed to properly load YDR " << p.path().filename() << std::endl;
         }
 
-        delete drawable;
-        drawable = nullptr;
-
         fileCount++;
     }
 }
@@ -128,7 +122,6 @@ void DumpShaderData() {
 void DumpNavmeshes() {
     std::filesystem::path rootDir = "D:\\RedDead\\Navmesh";
     std::filesystem::path objDir = "D:\\RedDead\\Navmesh\\obj_single";
-    UNavmesh::UNavmeshData* data = nullptr;
 
     uint64_t fileCount = 0;
     for (const auto& p : std::filesystem::directory_iterator(rootDir)) {
@@ -138,8 +131,7 @@ void DumpNavmeshes() {
 
         std::cout << p.path() << std::endl;
         try {
-            data = ImportYnv(p.path().generic_u8string());
-
+            std::shared_ptr<CNavmeshData> data = librdr3::ImportYnv(p.path().generic_u8string());
             if (data == nullptr) {
                 continue;
             }
@@ -151,9 +143,6 @@ void DumpNavmeshes() {
         catch (std::exception e) {
             std::cout << "Failed to properly load YNV " << p.path().filename() << std::endl;
         }
-
-        delete data;
-        data = nullptr;
 
         fileCount++;
     }

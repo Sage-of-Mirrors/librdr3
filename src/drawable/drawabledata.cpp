@@ -1,14 +1,15 @@
-#include "drawabledata.hpp"
-#include "loddata.hpp"
-#include "skeletondata.hpp"
-#include "bstream.h"
-#include "drawable.hpp"
+#include "drawable/drawabledata.hpp"
+#include "drawable/loddata.hpp"
+#include "drawable/skeletondata.hpp"
+#include "drawable/drawable.hpp"
+
+#include "util/bstream.h"
 
 #include <cmath>
 
-/* UDrawable */
+/* CDrawable */
 
-UDrawableData::UDrawableData() : mBlockMap(nullptr), mSkeletonData(nullptr) {
+CDrawableData::CDrawableData() : mBlockMap(nullptr), mSkeletonData(nullptr) {
     mBoundingBoxMin.x = FLT_MAX;
     mBoundingBoxMin.y = FLT_MAX;
     mBoundingBoxMin.z = FLT_MAX;
@@ -20,11 +21,11 @@ UDrawableData::UDrawableData() : mBlockMap(nullptr), mSkeletonData(nullptr) {
     mBoundingBoxMax.w = 0.0f;
 }
 
-UDrawableData::~UDrawableData() {
+CDrawableData::~CDrawableData() {
 
 }
 
-void UDrawableData::Deserialize(bStream::CStream* stream) {
+void CDrawableData::Deserialize(bStream::CStream* stream) {
     if (stream == nullptr) {
         return;
     }
@@ -54,7 +55,7 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
     // Read skeleton data, if present
     uint64_t skeletonDataPtr = stream->readUInt64() & 0x0FFFFFFF;
     if (skeletonDataPtr != 0) {
-        mSkeletonData = new USkeletonData();
+        mSkeletonData = std::make_shared<CSkeletonData>();
         streamPos = stream->tell();
 
         stream->seek(skeletonDataPtr);
@@ -90,7 +91,7 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
             continue;
         }
 
-        mLodData[i] = new ULodData();
+        mLodData[i] = std::make_shared<CLodData>();
 
         streamPos = stream->tell();
         stream->seek(lodDataPtr);
@@ -148,7 +149,7 @@ void UDrawableData::Deserialize(bStream::CStream* stream) {
     mPadding3 = stream->readUInt64();
 }
 
-void UDrawableData::Serialize(bStream::CMemoryStream* stream) {
+void CDrawableData::Serialize(bStream::CMemoryStream* stream) {
     // Empty header
     stream->fill(0xD0, 0);
 
@@ -239,11 +240,11 @@ void UDrawableData::Serialize(bStream::CMemoryStream* stream) {
     stream->writeUInt64(streamEndOffset | 0x50000000);
 }
 
-UDrawable* UDrawableData::GetDrawable() {
-    UDrawable* drawable = new UDrawable();
+std::shared_ptr<CDrawable> CDrawableData::GetDrawable() {
+    std::shared_ptr<CDrawable> drawable = std::make_shared<CDrawable>();
     drawable->FileName = mName.data();
 
-    std::vector<UShader*> shaders = mShaderContainer.GetShaders();
+    shared_vector<CShader> shaders = mShaderContainer.GetShaders();
 
     for (int i = 0; i < LOD_MAX; i++) {
         if (mLodData[i] == nullptr) {
@@ -254,9 +255,9 @@ UDrawable* UDrawableData::GetDrawable() {
         drawable->Lods[i]->LodDistance = mLodDistances[i];
         drawable->Lods[i]->LodFlags = mLodFlags[i];
 
-        for (UModel* m : drawable->Lods[i]->Models) {
-            for (UGeometry* g : m->Geometries) {
-                g->Shader = new UShader(*shaders[g->ShaderIndex]);
+        for (std::shared_ptr<CModel> m : drawable->Lods[i]->Models) {
+            for (std::shared_ptr<CGeometry> g : m->Geometries) {
+                g->Shader = shaders[g->ShaderIndex];
             }
         }
     }
@@ -265,14 +266,11 @@ UDrawable* UDrawableData::GetDrawable() {
         drawable->Skeleton = mSkeletonData->GetSkeleton();
     }
 
-    for (int i = 0; i < shaders.size(); i++) {
-        delete shaders[i];
-    }
-
+    shaders.clear();
     return drawable;
 }
 
-void UDrawableData::SetDrawable(UDrawable* drawable) {
+void CDrawableData::SetDrawable(std::shared_ptr<CDrawable> drawable) {
     /* Set filename */
     mName = drawable->FileName;
 
@@ -286,16 +284,16 @@ void UDrawableData::SetDrawable(UDrawable* drawable) {
     }
 }
 
-void UDrawableData::CalculateBoundingBox(UDrawable* drawable) {
+void CDrawableData::CalculateBoundingBox(std::shared_ptr<CDrawable> drawable) {
     for (int i = 0; i < LOD_MAX; i++) {
         if (drawable->Lods[i] == nullptr) {
             continue;
         }
 
-        for (UModel* model : drawable->Lods[i]->Models) {
-            for (UGeometry* geom : model->Geometries) {
-                for (UVertex* vert : geom->Vertices) {
-                    UVector3 pos = vert->Position[0];
+        for (std::shared_ptr<CModel> model : drawable->Lods[i]->Models) {
+            for (std::shared_ptr<CGeometry> geom : model->Geometries) {
+                for (std::shared_ptr<CVertex> vert : geom->Vertices) {
+                    Vector3 pos = vert->Position[0];
 
                     // Find minimum
                     if (pos.x < mBoundingBoxMin.x) {
@@ -371,8 +369,8 @@ void UDrawableData::CalculateBoundingBox(UDrawable* drawable) {
     mBoundingSphere.w = radius;
 }*/
 
-void UDrawableData::CalculateBoundingSphere(UDrawable* drawable) {
-    UVector3 center = { 0.f, 0.f, 0.f };
+void CDrawableData::CalculateBoundingSphere(std::shared_ptr<CDrawable> drawable) {
+    Vector3 center = { 0.f, 0.f, 0.f };
     float radius = 0.0f;
     float radiusSquared = 0.0f;
 
@@ -381,12 +379,12 @@ void UDrawableData::CalculateBoundingSphere(UDrawable* drawable) {
             continue;
         }
 
-        for (UModel* model : drawable->Lods[i]->Models) {
-            for (UGeometry* geom : model->Geometries) {
-                for (UVertex* vert : geom->Vertices) {
-                    UVector3 pos = vert->Position[0];
+        for (std::shared_ptr<CModel> model : drawable->Lods[i]->Models) {
+            for (std::shared_ptr<CGeometry> geom : model->Geometries) {
+                for (std::shared_ptr<CVertex> vert : geom->Vertices) {
+                    Vector3 pos = vert->Position[0];
 
-                    UVector3 posDiff = pos - center;
+                    Vector3 posDiff = pos - center;
                     float distanceSquared = posDiff.lengthSq();
 
                     if (distanceSquared > radiusSquared) {
