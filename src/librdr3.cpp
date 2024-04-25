@@ -5,6 +5,8 @@
 #include "drawable/drawabledictionary.hpp"
 #include "drawable/drawabledictionarydata.hpp"
 
+#include "audio/awc.hpp"
+
 #include "util/bstream.h"
 
 std::shared_ptr<CDrawable> librdr3::ImportYdr(std::string filePath) {
@@ -45,6 +47,18 @@ std::shared_ptr<CNavmeshData> librdr3::ImportYnv(std::string filePath) {
     }
 
     std::shared_ptr<CNavmeshData> data = std::make_shared<CNavmeshData>();
+    data->Deserialize(&stream);
+
+    return data;
+}
+
+std::shared_ptr<CAudioStreamContainer> librdr3::ImportAwc(std::string filePath) {
+    bStream::CFileStream stream(filePath);
+    if (stream.peekUInt32(0) != 0x54414441) {
+        return nullptr;
+    }
+
+    std::shared_ptr<CAudioStreamContainer> data = std::make_shared<CAudioStreamContainer>();
     data->Deserialize(&stream);
 
     return data;

@@ -16,6 +16,12 @@ file(GLOB_RECURSE LIBRDR3_SRC
 
     "src/drawable/*.cpp"
     "include/drawable/*.hpp"
+
+    "src/collision/*.cpp"
+    "include/collision/*.hpp"
+	
+	"src/audio/*.cpp"
+	"include/audio/*.hpp"
 )
 
 add_library(librdr3 ${LIBRDR3_SRC})
