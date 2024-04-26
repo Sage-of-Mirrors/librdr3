@@ -7,6 +7,9 @@
 
 #include "audio/awc.hpp"
 
+#include "fs/fsdevice.hpp"
+#include "fs/rpf8.hpp"
+
 #include "util/bstream.h"
 
 std::shared_ptr<CDrawable> librdr3::ImportYdr(std::string filePath) {
@@ -62,6 +65,15 @@ std::shared_ptr<CAudioStreamContainer> librdr3::ImportAwc(std::string filePath) 
     data->Deserialize(&stream);
 
     return data;
+}
+
+std::shared_ptr<CFSDevice> librdr3::ImportRpf(std::string filePath) {
+    bStream::CFileStream stream(filePath);
+    if (stream.peekUInt32(0) != 0x52504638) {
+        return nullptr;
+    }
+
+    return LoadRPF8(&stream);
 }
 
 bool librdr3::ExportYdr(std::string filePath, std::shared_ptr<CDrawable> data) {

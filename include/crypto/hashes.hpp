@@ -2,7 +2,7 @@
 
 #pragma once
 
-static const char* const RDR2_PC_KEY_HASHES[166]{
+static const char* const RDR2_PC_KEY_HASHES[166] {
     "AOQdXF%EXJg40-Dy-yR)", "AOQdXBb1-U(p^pC=8K(J", "AOQdXLAeq5^+nMGuW|R;", "AOQdXen8N%7{4=!!D_Ph",
     "AOQdX{YQ+-v+%7!VW?PW", "AOQdXAZ{T9gz8$QN4&iR", "AOQdXoOO_?9LD>?{7eFR", "AOQdX`}_FA$gYv_(O~~~",
     "AOQdXH&%%G^2(4!A|!Nf", "AOQdX(DFUCiLTx!`hX*6", "AOQdXw_3TWMUP<o{LJvO", "AOQdX>4YbmWBbV4=*DuL",
@@ -49,6 +49,8 @@ static const char* const RDR2_PC_KEY_HASHES[166]{
     "AOQdX=>@!8EZXhENd$-m", // 0xC5
     "AOQdX=<e#xZyZ>m@`S67", // 0xC6
 };
+
+static const char* const RDR2_PC_AES_KEY_HASH = "\xA0ya(§ur\x0AÂ\x04Ù\x81ŸhÁrã•,m";
 
 struct Tfit2Hashes
 {
