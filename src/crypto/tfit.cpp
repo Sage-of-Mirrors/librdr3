@@ -42,11 +42,11 @@ static void TFIT_DecryptBlock(const uint8_t input[16], uint8_t output[16], const
     std::memcpy(output, temp, 16);
 }
 
-CTfitEcbCipher::CTfitEcbCipher(const uint32_t keys[17][4], const uint32_t tables[17][16][256]) : keys_(keys), tables_(tables) {
+rdr3::crypto::CTfitEcbCipher::CTfitEcbCipher(const uint32_t keys[17][4], const uint32_t tables[17][16][256]) : keys_(keys), tables_(tables) {
 
 }
 
-size_t CTfitEcbCipher::Update(const uint8_t* input, uint8_t* output, size_t length) {
+size_t rdr3::crypto::CTfitEcbCipher::Update(const uint8_t* input, uint8_t* output, size_t length) {
     for (size_t blocks = length / TFIT_BLOCK_SIZE; blocks; --blocks, input += TFIT_BLOCK_SIZE, output += TFIT_BLOCK_SIZE) {
         TFIT_DecryptBlock(input, output, keys_, tables_);
     }
@@ -54,15 +54,15 @@ size_t CTfitEcbCipher::Update(const uint8_t* input, uint8_t* output, size_t leng
     return length;
 }
 
-size_t CTfitEcbCipher::GetBlockSize() {
+size_t rdr3::crypto::CTfitEcbCipher::GetBlockSize() {
     return TFIT_BLOCK_SIZE;
 }
 
-CTfitCbcCipher::CTfitCbcCipher(const uint32_t keys[17][4], const uint32_t tables[17][16][256], const uint8_t iv[16]) : keys_(keys), tables_(tables) {
+rdr3::crypto::CTfitCbcCipher::CTfitCbcCipher(const uint32_t keys[17][4], const uint32_t tables[17][16][256], const uint8_t iv[16]) : keys_(keys), tables_(tables) {
     std::memcpy(iv_, iv, 0x10);
 }
 
-size_t CTfitCbcCipher::Update(const uint8_t* input, uint8_t* output, size_t length) {
+size_t rdr3::crypto::CTfitCbcCipher::Update(const uint8_t* input, uint8_t* output, size_t length) {
     uint8_t iv[2][16];
 
     uint8_t* current_iv = iv_;
@@ -86,6 +86,6 @@ size_t CTfitCbcCipher::Update(const uint8_t* input, uint8_t* output, size_t leng
     return length;
 }
 
-size_t CTfitCbcCipher::GetBlockSize() {
+size_t rdr3::crypto::CTfitCbcCipher::GetBlockSize() {
     return TFIT_BLOCK_SIZE;
 }

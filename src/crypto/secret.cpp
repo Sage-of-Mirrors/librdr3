@@ -1,4 +1,4 @@
-// Copied from https://github.com/0x1F9F1/Swage/blob/master/src/crypto/secret.cpp
+// Copied and adapted from https://github.com/0x1F9F1/Swage/blob/master/src/crypto/secret.cpp
 
 #include "crypto/secret.hpp"
 #include "crypto/crc.hpp"
@@ -9,9 +9,14 @@
 #include <mutex>
 #include <memory>
 #include <algorithm>
+#include <ShlObj.h>
+#include <filesystem>
 
 // Closest prime to floor(2**32/golden_ratio)
 static constexpr uint32_t PolyFactor32 = 0x9E3779B1;
+
+constexpr char APP_NAME[] = "librdr3";
+constexpr char KEYS_FILE_NAME[] = "cipher.dat";
 
 template <typename T>
 static inline bool bit_test(const T* bits, size_t index) {
@@ -322,9 +327,9 @@ static inline uint32_t Permute32(uint32_t x)
     return ~x * PolyFactor32;
 }
 
-static_assert(sizeof(CSecretId) == 0x10);
+static_assert(sizeof(rdr3::crypto::CSecretId) == 0x10);
 
-std::string CSecretId::To85() const
+std::string rdr3::crypto::CSecretId::To85() const
 {
     char buffer[20];
     size_t encoded = b85encode(this, sizeof(*this), buffer, std::size(buffer));
@@ -332,7 +337,7 @@ std::string CSecretId::To85() const
     return std::string(buffer, encoded);
 }
 
-std::optional<CSecretId> CSecretId::From85(std::string_view text)
+std::optional<rdr3::crypto::CSecretId> rdr3::crypto::CSecretId::From85(std::string_view text)
 {
     CSecretId result;
     size_t decoded = b85decode(text.data(), text.size(), &result, sizeof(result));
@@ -346,7 +351,7 @@ std::optional<CSecretId> CSecretId::From85(std::string_view text)
     return result;
 }
 
-CSecretId CSecretId::FromData(const void* data, size_t length)
+rdr3::crypto::CSecretId rdr3::crypto::CSecretId::FromData(const void* data, size_t length)
 {
     return { static_cast<uint32_t>(length), PolyHash32(data, length), CRC64(data, length) };
 }
@@ -355,13 +360,13 @@ struct CSecretSearcher
 {
     CSecretSearcher(size_t length);
 
-    void AddSecret(CSecretId secret);
+    void AddSecret(rdr3::crypto::CSecretId secret);
     void Finalize();
 
     uint32_t Begin(const uint8_t* data) const;
     uint32_t Next(const uint8_t*& start, const uint8_t* end, uint32_t& state) const;
 
-    bool Search(const uint8_t* start, const uint8_t* end, size_t overlap, Callback<bool(CSecretId, const uint8_t*)> add_result) const;
+    bool Search(const uint8_t* start, const uint8_t* end, size_t overlap, Callback<bool(rdr3::crypto::CSecretId, const uint8_t*)> add_result) const;
 
     size_t Length{};
     uint32_t InvFactor{};
@@ -371,7 +376,7 @@ struct CSecretSearcher
     std::unique_ptr<FilterWord[]> Filter{};
     uint8_t FilterBits{};
 
-    std::unordered_map<uint32_t, std::vector<CSecretId>> Secrets{};
+    std::unordered_map<uint32_t, std::vector<rdr3::crypto::CSecretId>> Secrets{};
     size_t NumSecrets{};
 };
 
@@ -380,7 +385,7 @@ CSecretSearcher::CSecretSearcher(size_t length)
     , InvFactor(PolyHashInverse(length))
 {}
 
-void CSecretSearcher::AddSecret(CSecretId secret)
+void CSecretSearcher::AddSecret(rdr3::crypto::CSecretId secret)
 {
     auto& secrets = Secrets[secret.Hash];
 
@@ -478,7 +483,7 @@ uint32_t CSecretSearcher::Next(const uint8_t*& inout_start, const uint8_t* end, 
 }
 
 bool CSecretSearcher::Search(
-    const uint8_t* start, const uint8_t* end, size_t overlap, Callback<bool(CSecretId, const uint8_t*)> add_result) const
+    const uint8_t* start, const uint8_t* end, size_t overlap, Callback<bool(rdr3::crypto::CSecretId, const uint8_t*)> add_result) const
 {
     const size_t last = Length - 1;
 
@@ -504,7 +509,7 @@ bool CSecretSearcher::Search(
             {
                 for (const auto& secret : iter->second)
                 {
-                    if (secret.Crc == CRC64(here, secret.Length))
+                    if (secret.Crc == rdr3::crypto::CRC64(here, secret.Length))
                     {
                         if (!add_result(secret, here))
                             return false;
@@ -521,7 +526,7 @@ bool CSecretSearcher::Search(
     return true;
 }
 
-static std::vector<CSecretSearcher> MakeSearchers(std::unordered_set<CSecretId> secrets)
+static std::vector<CSecretSearcher> MakeSearchers(std::unordered_set<rdr3::crypto::CSecretId> secrets)
 {
     std::vector<CSecretSearcher> searchers;
 
@@ -544,8 +549,8 @@ static std::vector<CSecretSearcher> MakeSearchers(std::unordered_set<CSecretId> 
     return searchers;
 }
 
-std::unordered_map<CSecretId, std::vector<uint8_t>> FindSecrets(
-    std::unordered_set<CSecretId> secrets, Callback<std::pair<uint64_t, size_t>(void*, size_t)> read_data)
+std::unordered_map<rdr3::crypto::CSecretId, std::vector<uint8_t>> FindSecrets(
+    std::unordered_set<rdr3::crypto::CSecretId> secrets, Callback<std::pair<uint64_t, size_t>(void*, size_t)> read_data)
 {
     const auto searchers = MakeSearchers(std::move(secrets));
 
@@ -563,9 +568,9 @@ std::unordered_map<CSecretId, std::vector<uint8_t>> FindSecrets(
     prefix_length = (prefix_length + 0x3F) & ~size_t(0x3F);
 
     std::mutex results_lock;
-    std::unordered_map<CSecretId, std::vector<uint8_t>> results;
+    std::unordered_map<rdr3::crypto::CSecretId, std::vector<uint8_t>> results;
 
-    const auto add_result = [&results_lock, &results, &num_pending, num_secrets](CSecretId secret, const uint8_t* data) {
+    const auto add_result = [&results_lock, &results, &num_pending, num_secrets](rdr3::crypto::CSecretId secret, const uint8_t* data) {
         std::lock_guard<std::mutex> lock(results_lock);
 
         if (auto [iter, added] = results.try_emplace(secret, data, data + secret.Length); added)
@@ -602,17 +607,17 @@ std::unordered_map<CSecretId, std::vector<uint8_t>> FindSecrets(
     return results;
 }
 
-void CSecretFinder::Add(CSecretId id)
+void rdr3::crypto::CSecretFinder::Add(CSecretId id)
 {
     secrets_.emplace(id);
 }
 
-void CSecretFinder::Add(const char* id)
+void rdr3::crypto::CSecretFinder::Add(const char* id)
 {
     Add(CSecretId::From85(id).value());
 }
 
-std::unordered_map<CSecretId, std::vector<uint8_t>> CSecretFinder::Search(bStream::CStream* stream)
+std::unordered_map<rdr3::crypto::CSecretId, std::vector<uint8_t>> rdr3::crypto::CSecretFinder::Search(bStream::CStream* stream)
 {
     std::unordered_map<CSecretId, std::vector<uint8_t>> results;
     std::unordered_set<CSecretId> needles;
@@ -623,14 +628,14 @@ std::unordered_map<CSecretId, std::vector<uint8_t>> CSecretFinder::Search(bStrea
     {
         data.resize(secret.Length);
 
-        if (Secrets.Get(secret, data.data(), data.size()))
-        {
-            results.emplace(secret, data);
-        }
-        else
-        {
-            needles.emplace(secret);
-        }
+        //if (Secrets.Get(secret, data.data(), data.size()))
+        //{
+        //    results.emplace(secret, data);
+        //}
+        //else
+        //{
+        //    needles.emplace(secret);
+        //}
     }
 
     const auto read_data = [&stream](void* buffer, size_t length) -> std::pair<uint64_t, size_t> {
@@ -652,22 +657,20 @@ std::unordered_map<CSecretId, std::vector<uint8_t>> CSecretFinder::Search(bStrea
     return results;
 }
 
-CSecretStore Secrets;
-
-void CSecretStore::Add(std::vector<uint8_t> data)
+void rdr3::crypto::CSecretStore::Add(std::vector<uint8_t> data)
 {
     CSecretId id = CSecretId::FromData(data.data(), data.size());
 
     secrets_.emplace(id, std::move(data));
 }
 
-void CSecretStore::Add(const std::unordered_map<CSecretId, std::vector<uint8_t>>& secrets)
+void rdr3::crypto::CSecretStore::Add(const std::unordered_map<CSecretId, std::vector<uint8_t>>& secrets)
 {
     for (const auto& [_, data] : secrets)
         Add(data);
 }
 
-bool CSecretStore::Get(CSecretId id, void* output, size_t length)
+bool rdr3::crypto::CSecretStore::Get(CSecretId id, void* output, size_t length)
 {
     auto iter = secrets_.find(id);
 
@@ -682,27 +685,26 @@ bool CSecretStore::Get(CSecretId id, void* output, size_t length)
     return true;
 }
 
-bool CSecretStore::Get(const char* id, void* output, size_t length)
+bool rdr3::crypto::CSecretStore::Get(const char* id, void* output, size_t length)
 {
     return Get(CSecretId::From85(id).value(), output, length);
 }
 
-void CSecretStore::Load(bStream::CStream* input)
+void rdr3::crypto::CSecretStore::Load(bStream::CFileStream* input)
 {
-    //uint32_t length = 0;
+    uint32_t length = 0;
+    while (input->tell() < input->getSize())
+    {
+        length = input->readUInt32();
 
-    //while (input.TryRead(&length, sizeof(length)))
-    //{
-    //    std::vector<uint8_t> data(length);
-
-    //    if (!input.TryRead(data.data(), ByteSize(data)))
-    //        break;
-
-    //    Add(std::move(data));
-    //}
+        std::vector<uint8_t> data(length);
+        input->readBytesTo(data.data(), length);
+        
+        Add(std::move(data));
+    }
 }
 
-void CSecretStore::Save(bStream::CStream* output)
+void rdr3::crypto::CSecretStore::Save(bStream::CStream* output)
 {
     //for (const auto& [_, data] : secrets_)
     //{
@@ -712,13 +714,25 @@ void CSecretStore::Save(bStream::CStream* output)
     //}
 }
 
-void CSecretStore::Load()
+bool rdr3::crypto::CSecretStore::TryLoad()
 {
-    //if (Rc<Stream> s = AssetManager::Open("user:/secrets.bin"))
-        //Secrets.Load(*s);
+    PWSTR localAppPath;
+    if (SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_DEFAULT, NULL, &localAppPath) != S_OK) {
+    	return false;
+    }
+    
+    std::filesystem::path keysFilePath = std::filesystem::path(localAppPath) / APP_NAME / KEYS_FILE_NAME;
+    if (!std::filesystem::exists(keysFilePath)) {
+    		return false;
+    }
+    	
+    bStream::CFileStream stream(keysFilePath.u8string());
+    Load(&stream);
+    
+    return true;
 }
 
-void CSecretStore::Save()
+void rdr3::crypto::CSecretStore::Save()
 {
     //if (Rc<Stream> s = AssetManager::Create("user:/secrets.bin"))
         //Secrets.Save(*s);

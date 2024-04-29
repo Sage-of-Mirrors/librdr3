@@ -1,14 +1,13 @@
 #pragma once
 
 #include "types.h"
-#include "keys.hpp"
 
 #include <filesystem>
 
 namespace rdr3 {
 	namespace crypto {
-		bool InitCrypto(std::filesystem::path gameRoot);
+		extern class CKeys RDR2_KEYS;
 
-		extern CKeys RDR2_KEYS;
+		bool InitCrypto(std::filesystem::path gameRoot);
 	} // namespace crypto
 } // namespace rdr3

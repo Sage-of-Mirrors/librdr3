@@ -75,7 +75,7 @@ void CShaderUniformData::Deserialize(bStream::CStream* stream, uint64_t paramete
 
     // Try to find parameter name
     for (int i = 0; i < LEN_SHADER_PARAM_NAMES; i++) {
-        uint32_t hash = HashString(SHADER_PARAM_NAMES[i]);
+        uint32_t hash = JenkinsHashString(SHADER_PARAM_NAMES[i]);
 
         if (mNameHash == hash) {
             mName = SHADER_PARAM_NAMES[i];
@@ -181,7 +181,7 @@ void CShaderData::Deserialize(bStream::CStream* stream) {
     // Try to find shader name
 
     for (int i = 0; i < LEN_SHADER_NAMES; i++) {
-        uint32_t hash = HashString(SHADER_NAMES[i]);
+        uint32_t hash = JenkinsHashString(SHADER_NAMES[i]);
 
         if (mNameHash == hash) {
             mName = SHADER_NAMES[i];

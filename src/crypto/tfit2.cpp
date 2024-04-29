@@ -40,7 +40,7 @@ static uint64_t TFIT2_DecryptRoundBlock(const uint64_t input1[8], const uint64_t
     return lookup[(lower & 0xFF) ^ (upper & 0xF00) ^ xorr];
 }
 
-static void TFIT2_DecryptRoundA(const CTfit2Context& ctx, uint8_t data[16]) {
+static void TFIT2_DecryptRoundA(const rdr3::crypto::CTfit2Context& ctx, uint8_t data[16]) {
     const uint64_t values[2] {
         ctx.InitTables[0x0][data[0x0]] ^ ctx.InitTables[0x1][data[0x1]] ^ ctx.InitTables[0x2][data[0x2]] ^
         ctx.InitTables[0x3][data[0x3]] ^ ctx.InitTables[0x4][data[0x4]] ^ ctx.InitTables[0x5][data[0x5]] ^
@@ -54,7 +54,7 @@ static void TFIT2_DecryptRoundA(const CTfit2Context& ctx, uint8_t data[16]) {
     std::memcpy(data, values, 16);
 }
 
-static void TFIT2_DecryptRoundB(const CTfit2Context& ctx, size_t index, uint8_t data[16], const uint64_t key[2]) {
+static void TFIT2_DecryptRoundB(const rdr3::crypto::CTfit2Context& ctx, size_t index, uint8_t data[16], const uint64_t key[2]) {
     const auto& round = ctx.Rounds[index];
 
     uint64_t v0[8], v1[8];
@@ -85,7 +85,7 @@ static void TFIT2_DecryptRoundB(const CTfit2Context& ctx, size_t index, uint8_t 
     std::memcpy(data, val, 16);
 }
 
-static void TFIT2_DecryptRoundC(const CTfit2Context& ctx, size_t index, uint8_t data[16], const uint64_t key[2]) {
+static void TFIT2_DecryptRoundC(const rdr3::crypto::CTfit2Context& ctx, size_t index, uint8_t data[16], const uint64_t key[2]) {
     const auto& round = ctx.Rounds[index];
 
     uint64_t v0[8], v1[8];
@@ -134,7 +134,7 @@ static uint8_t TFIT2_DecryptSquashBytes(const uint64_t input[8], const uint64_t 
     return (uint8_t)(v1);
 }
 
-static void TFIT2_DecryptRoundD(const CTfit2Context& ctx, uint8_t data[16]) {
+static void TFIT2_DecryptRoundD(const rdr3::crypto::CTfit2Context& ctx, uint8_t data[16]) {
     uint64_t v0[8], v1[8];
 
     TFIT2_DecryptSplatBytes(data + 0, v0);
@@ -159,7 +159,7 @@ static void TFIT2_DecryptRoundD(const CTfit2Context& ctx, uint8_t data[16]) {
     data[0xF] = ctx.EndTables[0xF][TFIT2_DecryptSquashBytes(v1, ctx.EndMasks[0xF]) ^ ctx.EndXor[0xF]];
 }
 
-static void TFIT2_DecryptBlock(const CTfit2Context& ctx, const uint64_t key[17][2], const uint8_t input[16], uint8_t output[16]) {
+static void TFIT2_DecryptBlock(const rdr3::crypto::CTfit2Context& ctx, const uint64_t key[17][2], const uint8_t input[16], uint8_t output[16]) {
     uint8_t temp[16];
     std::memcpy(temp, input, 16);
 
@@ -179,11 +179,11 @@ static void TFIT2_DecryptBlock(const CTfit2Context& ctx, const uint64_t key[17][
     std::memcpy(output, temp, 16);
 }
 
-CTfit2CbcCipher::CTfit2CbcCipher(const CTfit2Key* key, const uint8_t iv[16], const CTfit2Context* ctx) : keys_(key->Data + 1), ctx_(ctx) {
+rdr3::crypto::CTfit2CbcCipher::CTfit2CbcCipher(const CTfit2Key* key, const uint8_t iv[16], const CTfit2Context* ctx) : keys_(key->Data + 1), ctx_(ctx) {
     std::memcpy(iv_, iv, 16);
 }
 
-size_t CTfit2CbcCipher::Update(const uint8_t* input, uint8_t* output, size_t length) {
+size_t rdr3::crypto::CTfit2CbcCipher::Update(const uint8_t* input, uint8_t* output, size_t length) {
     uint8_t iv[2][16];
 
     uint8_t* current_iv = iv_;
@@ -207,6 +207,6 @@ size_t CTfit2CbcCipher::Update(const uint8_t* input, uint8_t* output, size_t len
     return length;
 }
 
-size_t CTfit2CbcCipher::GetBlockSize() {
+size_t rdr3::crypto::CTfit2CbcCipher::GetBlockSize() {
     return TFIT2_BLOCK_SIZE;
 }

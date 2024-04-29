@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 
 file(GLOB_RECURSE LIBRDR3_SRC
     "src/*.cpp"
@@ -35,7 +36,7 @@ file(GLOB_RECURSE LIBRDR3_SRC
 add_library(librdr3 ${LIBRDR3_SRC})
 
 target_include_directories(librdr3 PUBLIC include)
-target_link_libraries(librdr3 PRIVATE OpenSSL::applink OpenSSL::Crypto)
+target_link_libraries(librdr3 PRIVATE OpenSSL::applink OpenSSL::Crypto ZLIB::ZLIB)
 
 add_executable(tester test/main.cpp test/json.hpp)
 target_link_libraries(tester librdr3)

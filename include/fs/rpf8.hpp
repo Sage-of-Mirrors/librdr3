@@ -4,8 +4,22 @@
 
 #include "types.h"
 
+#include <filesystem>
+
+namespace rdr3 {
+	namespace fs {
+		class CFSDevice;
+	}
+}
+
 constexpr uint8_t DIR_FILE_EXT = 0xFE;
 constexpr uint8_t ENCRYPTION_KEY_NONE = 0xFF;
+
+enum class ECompressionType : uint8_t {
+	CMP_NONE,
+	CMP_DEFLATE,
+	CMP_OODLE
+};
 
 struct CRPF8Header {
 	uint32_t mMagic;
@@ -49,7 +63,7 @@ struct CRPF8Entry {
 
 	uint32_t GetOnDiskSize() const { return (mBitfield1 & 0xFFFFFFF) << 4; }
 	uint64_t GetOffset() const { return ((mBitfield1 >> 0x1C) & 0x7FFFFFFF) << 4; }
-	uint8_t GetCompressorId() const { return (mBitfield1 >> 0x3B) & 0x1F; }
+	ECompressionType GetCompressorId() const { return ECompressionType((mBitfield1 >> 0x3B) & 0x1F); }
 	bool IsDirectory() const { return GetFileExtId() == DIR_FILE_EXT; }
 	bool IsEncrypted() const { return GetEncryptionKeyId() != ENCRYPTION_KEY_NONE; }
 
@@ -84,4 +98,4 @@ struct CRPF8Entry {
     //bool GetResourceFileHeader(datResourceFileHeader& info) const;
 };
 
-std::shared_ptr<class CFSDevice> LoadRPF8(bStream::CStream* stream);
+std::shared_ptr<class rdr3::fs::CFSDevice> LoadRPF8(std::filesystem::path filePath);
