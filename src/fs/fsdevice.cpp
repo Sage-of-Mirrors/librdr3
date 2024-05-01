@@ -70,11 +70,11 @@ void rdr3::fs::CFSDevice::ExpandFile(uint8_t* expandedFile, uint8_t* diskFile, c
 	}
 }
 
-uint8_t* rdr3::fs::CFSDevice::GetFile(std::filesystem::path path, uint32_t& size) {
-	return GetFile(JenkinsHashString(path.u8string()), size);
+uint8_t* rdr3::fs::CFSDevice::GetFileData(std::filesystem::path path, uint32_t& size) {
+	return GetFileData(JenkinsHashString(path.u8string()), size);
 }
 
-uint8_t* rdr3::fs::CFSDevice::GetFile(uint32_t hash, uint32_t& size) {
+uint8_t* rdr3::fs::CFSDevice::GetFileData(uint32_t hash, uint32_t& size) {
 	auto iter = mFileEntries.find(hash);
 	if (iter == mFileEntries.end()) {
 		return nullptr;

@@ -26,8 +26,8 @@ namespace rdr3 {
 
 			void AddFileEntry(CRPF8Entry entry);
 
-			uint8_t* GetFile(std::filesystem::path path, uint32_t& size);
-			uint8_t* GetFile(uint32_t hash, uint32_t& size);
+			uint8_t* GetFileData(std::filesystem::path path, uint32_t& size);
+			uint8_t* GetFileData(uint32_t hash, uint32_t& size);
 		};
 	}
 }

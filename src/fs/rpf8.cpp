@@ -58,8 +58,10 @@ std::shared_ptr<rdr3::fs::CFSDevice> LoadRPF8(std::filesystem::path filePath) {
 		entries.push_back(entry);
 	}
 
-	rdr3::crypto::CTfit2CbcCipher cipher = rdr3::crypto::RDR2_KEYS.GetCipher(header.mDecryptionTag);
-	cipher.Update((uint8_t*)entries.data(), (uint8_t*)entries.data(), sizeof(CRPF8Entry) * header.mEntryCount);
+	if (header.mDecryptionTag != 0xFF) {
+		rdr3::crypto::CTfit2CbcCipher cipher = rdr3::crypto::RDR2_KEYS.GetCipher(header.mDecryptionTag);
+		cipher.Update((uint8_t*)entries.data(), (uint8_t*)entries.data(), sizeof(CRPF8Entry) * header.mEntryCount);
+	}
 
 	std::shared_ptr<rdr3::fs::CFSDevice> device = std::make_shared<rdr3::fs::CFSDevice>(stream);
 
