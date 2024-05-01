@@ -17,6 +17,9 @@ constexpr char MANIFEST_XML_NAME[] = "mountmanifest_tu.xml";
 constexpr char MOUNTS_ROOT_NODE_NAME[] = "MountManifest";
 constexpr char MOUNTS_NODE_NAME[]  = "Mounts";
 
+constexpr char MOUNTPOINT_NODE_NAME[] = "MountPoint";
+constexpr char PATH_NODE_NAME[] = "Path";
+
 namespace {
 	using MountPointNameHash = uint32_t;
 	using MountPointDevices = shared_vector <rdr3::fs::CFSDevice>;
@@ -28,6 +31,7 @@ namespace {
 bool LoadDevices(std::filesystem::path gameRoot) {
 	std::filesystem::path appDataPath = gameRoot / APPDATA_RPF_NAME;
 	if (!std::filesystem::exists(appDataPath)) {
+		std::cout << "Cannot init FS without \"" << gameRoot << "\". Try repairing your install." << std::endl;
 		return false;
 	}
 
@@ -39,13 +43,14 @@ bool LoadDevices(std::filesystem::path gameRoot) {
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_buffer(manifestData, size_t(manifestSize));
 	if (result.status != pugi::status_ok) {
+		std::cout << "Failed to load \"" << MANIFEST_XML_NAME << "\". Try repairing your install." << std::endl;
 		return false;
 	}
 
 	pugi::xml_node mountNode = doc.child(MOUNTS_ROOT_NODE_NAME).child(MOUNTS_NODE_NAME);
 	for (pugi::xml_node itemNode : mountNode.children()) {
-		std::string mountName = itemNode.child("MountPoint").text().as_string();
-		std::string deviceName = itemNode.child("Path").text().as_string();
+		std::string mountName = itemNode.child(MOUNTPOINT_NODE_NAME).text().as_string();
+		std::string deviceName = itemNode.child(PATH_NODE_NAME).text().as_string();
 
 		if (deviceName[deviceName.length() - 1] == '/') {
 			deviceName[deviceName.length() - 1] = '\\';
@@ -57,14 +62,22 @@ bool LoadDevices(std::filesystem::path gameRoot) {
 		}
 
 		std::filesystem::path deviceFilePath = gameRoot / deviceName;
+		if (!std::filesystem::exists(deviceFilePath)) {
+			std::cout << "Attempted to mount device from \"" << deviceName << "\", but it was not found in \"" << gameRoot << "\"." << std::endl;
+			continue;
+		}
 
 		// RPF file
-		if (std::filesystem::is_regular_file(deviceFilePath) && std::filesystem::exists(deviceFilePath)) {
+		if (std::filesystem::is_regular_file(deviceFilePath)) {
 			MountPoints[mountNameHash].push_back(LoadRPF8(deviceFilePath));
 		}
-		// Directory...?
+		// Directory
+		else if (std::filesystem::is_directory(deviceFilePath)) {
+			std::cout << "Mounting manifest wants to mount directory \"" << deviceName << "\", but that's currently not supported. Skipping" << std::endl;
+		}
+		// Unknown type
 		else {
-			std::cout << "Mounting manifest wants to mount directory " << deviceName << ", but what does that mean exactly? Skipping." << std::endl;
+			std::cout << "Mounting manifest wants to mount \"" << deviceName << "\", but it's neither a file nor a directory. Skipping." << std::endl;
 		}
 	}
 
@@ -72,7 +85,13 @@ bool LoadDevices(std::filesystem::path gameRoot) {
 }
 
 bool rdr3::fs::InitFS(std::filesystem::path gameRoot) {
+	if (bIsFSInitialized) {
+		std::cout << "FS already initialized!" << std::endl;
+		return true;
+	}
+
 	if (!rdr3::crypto::InitCrypto(gameRoot) || !InitOodle(gameRoot)) {
+		std::cout << "Failed to init FS." << std::endl;
 		return false;
 	}
 
