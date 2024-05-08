@@ -30,6 +30,9 @@ file(GLOB_RECURSE LIBRDR3_SRC
 
     "src/fs/*.cpp"
     "include/fs/*.hpp"
+
+    "src/misc/*.cpp"
+    "include/misc/*.hpp"
 )
 
 add_library(librdr3 ${LIBRDR3_SRC})
