@@ -87,6 +87,9 @@ struct Vector3 {
 struct Vector4 {
     float x, y, z, w;
 
+    Vector4() : Vector4(0.0f, 0.0f, 0.0f, 0.0f) { }
+    Vector4(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) { }
+
     Vector4 operator +(const Vector4& other) {
         Vector4 sum = {
             x + other.x, y + other.y, z + other.z, w + other.w
@@ -115,7 +118,7 @@ struct Vector4 {
         return prod;
     }
 
-    Vector4 xyz() { return { x, y, z }; }
+    Vector3 xyz() { return { x, y, z }; }
 };
 
 struct Matrix3x4 {

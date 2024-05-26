@@ -31,6 +31,12 @@ file(GLOB_RECURSE LIBRDR3_SRC
     "src/fs/*.cpp"
     "include/fs/*.hpp"
 
+    "src/level/*.cpp"
+    "include/level/*.hpp"
+	
+	"src/schema/*.cpp"
+    "include/schema/*.hpp"
+
     "src/misc/*.cpp"
     "include/misc/*.hpp"
 )

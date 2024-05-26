@@ -240,6 +240,7 @@ class CMemoryStream : public CStream {
 
 		CMemoryStream(uint8_t*, size_t, Endianess, OpenMode);
 		CMemoryStream(size_t, Endianess, OpenMode);
+		CMemoryStream(const CMemoryStream& other);
 		CMemoryStream(){}
 		~CMemoryStream(){
 			if(mHasInternalBuffer){
@@ -665,6 +666,26 @@ CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode){
 	mOpenMode = mode;
 	order = ord;
 	systemOrder = getSystemEndianess();
+}
+
+CMemoryStream::CMemoryStream(const CMemoryStream& other) {
+	mPosition = other.mPosition;
+	mSize = other.mSize;
+	mCapacity = other.mCapacity;
+	mOpenMode = other.mOpenMode;
+	order = other.order;
+	systemOrder = other.systemOrder;
+
+	if (other.mHasInternalBuffer) {
+		mHasInternalBuffer = true;
+
+		mBuffer = new uint8_t[mSize]{};
+		memcpy(mBuffer, other.mBuffer, mSize);
+	}
+	else {
+		mHasInternalBuffer = false;
+		mBuffer = other.mBuffer;
+	}
 }
 
 size_t CMemoryStream::getSize(){
